@@ -104,7 +104,7 @@ try {
 
 	Set-Content -Path (Join-Path $tools '.installed') -Value "installed $(Get-Date -Format s)`nseedvr2 $SEEDVR2_COMMIT`nfacefusion $FACEFUSION_COMMIT" -Encoding utf8
 	Write-Host ''
-	Write-Host 'Installation complete. From now on the upscaler works without internet.' -ForegroundColor Green
+	Write-Host 'Installation complete. From now on Kinora works without internet.' -ForegroundColor Green
 	Write-Host 'Optional hard block: run firewall_block.ps1 once in an Administrator PowerShell.'
 	exit 0
 } catch {

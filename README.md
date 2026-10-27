@@ -1,8 +1,8 @@
-# video-upscaler
+# Kinora
 
-Offline upscaler for old low-resolution home video (320×240, 640×480) to 1080p, with the
-person's identity locked to reference photos, and a video editor to trim, join, speed up and add
-texts to the results. Everything runs on this PC.
+Kinora makes old home videos sharp again. It upscales low-resolution video (320×240, 640×480)
+to 1080p, can keep a person's face true to reference photos, and has a video editor to trim, join,
+speed up and add texts. Everything runs offline on this PC.
 
 ```
 input ─► prep (section, crop, even timing, find real/damaged pictures) ─► RIFE in-between frames* ─► SeedVR2 ─► FaceFusion face lock ─► 1080p + audio
@@ -18,7 +18,7 @@ VRAM) and `git`, `uv` and `ffmpeg` in PATH:
 
 ```bat
 winget install Git.Git astral-sh.uv Gyan.FFmpeg
-git clone https://github.com/dreamtheater484/video-upscaler.git
+git clone https://github.com/dreamtheater484/kinora.git
 ```
 
 Then double-click **`start.bat`**. The first start runs `install.ps1`, which downloads about
@@ -28,21 +28,25 @@ be re-run safely (finished steps are skipped). After that nothing uses the inter
 
 ## Front end
 
-Double-click **`start.bat`**. A small window opens (keep it open) and the front end appears in
-your browser at http://127.0.0.1:8766 (this PC only).
+Double-click **`start.bat`**. A small window opens (keep it open) and Kinora appears in your
+browser at http://127.0.0.1:8766 (this PC only). The rail on the left switches between three
+screens: **Upscale**, **Edit** and **Library**. While videos are being made, a ring and the
+percentage on the Upscale icon show the progress from the other screens.
 
-**Queue (left).** Drop videos or whole folders anywhere on the page (they are copied into
-`input\`, keeping the folder name; identical files are reused), or use *Add files…* /
-*Add folder…* (Windows dialogs, no copying). Reorder with ↑/↓, remove with ✕, re-run a finished
-or failed video with ↺. The queue and settings survive a restart. *Also make one merged video*
-joins all finished videos in queue order into one file (optional name), with a chapter per video;
-different sizes are pillar/letterboxed, frame rates evened out, silence added where a part has none.
+### Upscale
 
-**Selected video (right).** Each video has its own section and crop:
-- **Section**: drag the blue handles on the timeline, type times (`1:58`, `2:35.5`), or play to a
+**Your videos** (the row at the bottom). Drop videos or whole folders anywhere on the window (they
+are copied into `input\`, keeping the folder name; identical files are reused), or use *Add videos*
+/ *Add folder* (Windows dialogs, no copying). The videos are done one by one, left to right: change
+the order with the arrows on a video, remove one with ✕, re-run a finished or failed one with ↺.
+The list and the settings survive a restart.
+
+**The chosen video** (top). Click a video in the row to see it. Under the player are three tools,
+one at a time:
+- **Section**: drag the handles on the strip of frames, type times (`1:58`, `2:35.5`), or play to a
   spot and press *Set start/end* (keys `I` / `O`). `←`/`→` step one frame.
 - **Crop**: *Auto* removes black borders, *None* keeps everything, *Custom*: *Draw on video*
-  (drag a rectangle, move it, resize by the corners) or *Detect picture area* (the part of the
+  (drag a rectangle, move it, resize by the corners) or *Find picture area* (the part of the
   image that changes, e.g. the webcam picture inside a screen recording). *This video* / *All
   videos* chooses whether the crop is per video or shared: with *All videos* every video that
   isn't made yet uses the crop, also videos added later, and a change on any video changes it for
@@ -50,30 +54,43 @@ different sizes are pillar/letterboxed, frame rates evened out, silence added wh
 - **Brightness**: *Compare on this frame* (key `B`) shows the paused frame split in two, the
   original left of the divider and the chosen brightness right of it, rendered with the same
   filter the upscaler uses. Drag the divider, move the slider (the change shows instantly) and
-  pick other frames on the timeline. It is the same setting as *Settings → Picture → Brightness*,
-  so it applies to every video in the queue.
+  pick other frames on the strip. It is the same setting as *All settings → Picture →
+  Brightness*, so it applies to every video in the list.
 
-**Settings** apply to the whole queue: face lock (person, identity strength), output (resolution,
-frame rate, motion quality, smoothing), picture (noise reduction, brightness), sound and files
-(keep or drop the sound, comparison videos). *Advanced* has model and face options.
+**The recipe** (right). The main settings read as one sentence, for example *Make each video
+1080p at the original frame rate with best motion, keep Grandpa's face true to 3 photos, and save
+it as full quality.* Click an underlined value to change it. Below the sentence: smoothing of
+damaged frames, the original sound and side-by-side copies. *All settings* has everything: face
+lock (person, identity strength), output (resolution, frame rate, motion quality), file size,
+picture (noise reduction, brightness) and, under *Advanced*, the model and face options. The
+settings apply to every video in the list.
 
-**Progress** shows the whole queue (overall %, elapsed, time left, ready-at time) and the current
-video (step, detail, step bar). The estimate learns from every finished run.
+*Takes about* shows how long the list takes and when it will be ready. *Also join them into one
+video* joins all finished videos in list order into one file (optional name), with a chapter per
+video; different sizes are pillar/letterboxed, frame rates evened out, silence added where a part
+has none.
 
-**Pause** stops the video that is being made, so the GPU is free for other things; *Resume queue*
+**Progress** takes the place of the estimate while the list runs: overall %, time left, ready-at
+time, the current video and its steps. The estimate learns from every finished run.
+
+**Pause** stops the video that is being made, so the GPU is free for other things; *Resume*
 continues where it stopped. Finished steps are kept, and the upscale step (the longest) is done in
 parts of about 5 minutes, so a pause costs at most the part in progress; the other steps start
 again from their beginning. Closing the app while a video is being made works like a pause.
 
-Results play in the page (*Play*, with a side-by-side tab when there is a comparison video). The
-page uses the whole width of the window and the players grow with it; their own controls have a full
-screen button.
+### Library
 
-## Edit tab: trimming, joining, speeding up, texts
+All finished videos, newest first and grouped by day, with filters (upscaled, edited, joined,
+smaller copies) and a search box. Click a video for its details on the right: *Play* (with a
+side-by-side tab when there is a comparison video), *Edit*, *Side by side*, *Show* (in its folder)
+and *Make a smaller copy* for sharing. A double-click plays it. *Make smaller…* at the top does
+several videos at once.
 
-The page has two tabs at the top: **Upscale** and **Edit**. The Edit tab is a video editor for
-the results, the videos in the queue, or any other video. To start, click *Edit this video* on the
-Upscale tab or *Edit* on a result; or open the Edit tab and click one of the videos it offers. More
+## Edit: trimming, joining, speeding up, texts
+
+**Edit** is a video editor for the finished videos, the videos in the Upscale list, or any other
+video. To start, click *Edit this video* on the Upscale screen or *Edit* in the Library; or open
+Edit and click one of the videos it offers. More
 videos: **+** next to a video in the list on the left, drag it onto the timeline, or drop video
 files on the page (they are copied into `input\`).
 
@@ -83,7 +100,7 @@ shows on the player.
 
 Everything plays straight away while you edit; nothing is rendered until **Export video…**.
 
-The tab fills the window at any size: the player gets all the room the panels and the timeline leave.
+The Edit screen fills the window at any size: the player gets all the room the panels and the timeline leave.
 The video list on the left folds into a slim rail (« in its corner; » or **+** on the rail), which it
 does by itself on narrower windows. **Full screen**: the button at the right of the player's controls,
 `F`, or double-click the video; the controls fade out while it plays (move the mouse to see them), and
@@ -126,11 +143,11 @@ menu of what is selected, the arrow keys move, `Enter` chooses, `Esc` closes.
   (they snap to the clips' edges). A new text gets the look of the previous one. The export draws
   the texts with the same code as the player, so they look exactly as in the preview.
 - **Export**: name, file size and format, sound. These are the same *File size* and *Sound* settings
-  as on the Upscale tab. The frame has the shape that most of the edit has, at the size of the
+  as on the Upscale screen. The frame has the shape that most of the edit has, at the size of the
   largest clip of that shape (other clips get black bars); the frame rate is the highest of the clips
-  (lower rates repeat frames). Making videos larger or smoother is the Upscale tab's job. The result
+  (lower rates repeat frames). Making videos larger or smoother is the Upscale screen's job. The result
   lands in `output\` (`<name>.mp4`, or `<name>_<level>-<format>.mp4` when made smaller) and shows in
-  Results. Every frame is compressed once, straight from the source videos. The export is made in
+  the Library. Every frame is compressed once, straight from the source videos. The export is made in
   parts (each clip, each transition, with the texts that show during it) that are kept in
   `work\_edit\`, so exporting again after a small change only makes the parts that changed.
 
@@ -176,9 +193,9 @@ with VMAF (Netflix's perceptual quality score: 95+ = indistinguishable) on an up
 | Balanced | −89% · 94.9 | −87% · 94.7 | −75% · 94.7 | only visible side by side |
 | Small | −92% · 90.1 | −91% · 89.4 | −83% · 89.0 | slightly softer up close |
 
-- **While upscaling**: Settings → *File size* (the merged video uses it too; it is made from
+- **While upscaling**: the recipe's file size, or *All settings → File size* (the joined video uses it too; it is made from
   full-quality copies so it is compressed only once). CLI: `--size balanced --format av1`.
-- **Existing videos**: Results → *Make smaller…* (or *Smaller…* on a row). Writes
+- **Existing videos**: Library → *Make a smaller copy* on a video, or *Make smaller…* for several. Writes
   `<name>_<level>-<format>.mp4` next to it and measures the real size, reduction and VMAF.
   CLI: `shrink.bat --quality balanced --format av1 video.mp4 …`
 - Playback: AV1 – Windows 10/11, Android, Mac, browsers; iPhone only from 15 Pro. H.265 – all
@@ -226,7 +243,7 @@ between and sometimes skipped time slots. The pipeline:
    falls within half an output frame. Hard scene cuts are not blended.
 
 This also runs at the original frame rate when at least 10% of frames are repeats or any picture
-is damaged (turn off with *Smooth repeated frames* / `--no-smooth`). With ~4 real pictures per
+is damaged (turn off with *Smooth damaged frames* / `--no-smooth`). With ~4 real pictures per
 second, slow and moderate movement becomes smooth. Limits: motion blur that the old camera
 recorded cannot be undone, and very fast movements can still smear a little.
 
@@ -244,7 +261,8 @@ faces are blanked out automatically (crops in `work\_refs\`).
 - The installation (`install.ps1`, run by the first `start.bat`) is the only step that uses the
   internet: GitHub (SeedVR2, FaceFusion, RIFE release 20250112), PyPI/PyTorch (packages),
   Hugging Face/GitHub (model weights). Extra models later: `download_models.bat 7b-sharp`.
-- The front end listens on 127.0.0.1 only and loads nothing from the internet.
+- The front end listens on 127.0.0.1 only and loads nothing from the internet; its typefaces
+  (Krona One, Instrument Sans, Martian Mono) are in `ui\fonts\`, under the SIL Open Font License.
 - `upscale.bat` starts both tools behind a guard that refuses any non-local network connection,
   and FaceFusion's model-URL checks are disabled.
 - Hard block: run `firewall_block.ps1` once in an Administrator PowerShell. It blocks outbound
@@ -257,8 +275,8 @@ input\      source videos           refs\       reference photos, one folder per
 output\     results                 work\       per-video stage cache (safe to delete)
 models\     SeedVR2 weights         tools\      launchers + helpers; SeedVR2, FaceFusion, Pythons, RIFE (installed)
 ui\         the front end page      tools\requirements\   pinned Python packages
-            (editor.js/.css: Edit tab)
-app.py      the front end's server  editor.py   the Edit tab's export (and preview copies)
+            (editor.js/.css: Edit; fonts\: typefaces)
+app.py      the front end's server  editor.py   Edit's export (and preview copies)
 projects\   edit project files (.vedit), unless saved elsewhere
 ```
 

@@ -2028,7 +2028,7 @@ function edRenderStart() {
 			<span class="lib-thumb" style="${entry.thumb ? `background-image:url('${media(entry.thumb)}')` : ''}"></span>
 			<span style="min-width:0"><span class="lib-name">${esc(entry.name)}</span><span class="lib-meta num">${entry.duration ? clock(entry.duration) : ''}${entry.width ? ` · ${entry.width}×${entry.height}` : ''}</span></span>
 			<span class="ed-start-plus">+ Add</span></button>`).join('')
-		: '<div class="small" style="color:#a0a8b6">No videos yet: add videos on the Upscale tab, or pick any video on this PC.</div>';
+		: '<div class="small" style="color:var(--ink-quiet)">No videos yet: add videos on the Upscale tab, or pick any video on this PC.</div>';
 	if ($('ed-start-list').dataset.html !== html) { $('ed-start-list').innerHTML = html; $('ed-start-list').dataset.html = html; }
 }
 $('ed-start-list').addEventListener('click', (e) => { const b = e.target.closest('[data-path]'); if (b) edAddVideo(b.dataset.path); });

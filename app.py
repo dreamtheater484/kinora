@@ -1260,6 +1260,15 @@ class Handler(BaseHTTPRequestHandler):
 			self.send_header('Cache-Control', 'no-store')
 			self.end_headers()
 			self.wfile.write(body)
+		elif url.path.startswith('/fonts/') and re.fullmatch(r'[a-z0-9-]+\.woff2', url.path[7:]) and (UI_FILE.parent / 'fonts' / url.path[7:]).is_file():
+			# the page's typefaces ship with the app (ui/fonts), so nothing is loaded from the internet
+			body = (UI_FILE.parent / 'fonts' / url.path[7:]).read_bytes()
+			self.send_response(HTTPStatus.OK)
+			self.send_header('Content-Type', 'font/woff2')
+			self.send_header('Content-Length', str(len(body)))
+			self.send_header('Cache-Control', 'max-age=86400')
+			self.end_headers()
+			self.wfile.write(body)
 		elif url.path == '/api/state':
 			self.send_json(RUNNER.snapshot())
 		elif url.path == '/api/log':
@@ -1484,14 +1493,15 @@ def main() -> None:
 	try:
 		server = Server((HOST, PORT), Handler)
 	except OSError:
-		print('Port {} is in use: the front end is probably already running. Opening it.'.format(PORT))
-		webbrowser.open('http://{}:{}/'.format(HOST, PORT))
+		print('Port {} is in use: Kinora is probably already running.{}'.format(PORT, '' if '--no-browser' in sys.argv else ' Opening it.'))
+		if '--no-browser' not in sys.argv:
+			webbrowser.open('http://{}:{}/'.format(HOST, PORT))
 		return
 	EDITOR = Editor()
 	RUNNER = Runner()
 	SHRINKER = Shrinker()
 	url = 'http://{}:{}/'.format(HOST, PORT)
-	print('Video upscaler front end: ' + url)
+	print('Kinora: ' + url)
 	print('Keep this window open while you use it. Close it (or press Ctrl+C) to stop.')
 	if '--no-browser' not in sys.argv:
 		threading.Timer(0.5, webbrowser.open, [ url ]).start()

@@ -3,198 +3,178 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Video Upscaler</title>
+<title>Kinora</title>
 <style>
+/* Kinora design system (see the Kinora Design System artifact): a dark viewing room with one warm light.
+   lamp = the next step, progress, the playhead; aqua = done and the selection in Edit; rose = faces and people. */
+@font-face { font-family: "Krona One"; font-weight: 400; font-display: swap; src: url(/fonts/krona-one-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Krona One"; font-weight: 400; font-display: swap; src: url(/fonts/krona-one-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Instrument Sans"; font-weight: 400 700; font-display: swap; src: url(/fonts/instrument-sans-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Sans"; font-weight: 400 700; font-display: swap; src: url(/fonts/instrument-sans-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Martian Mono"; font-weight: 400 600; font-display: swap; src: url(/fonts/martian-mono-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Martian Mono"; font-weight: 400 600; font-display: swap; src: url(/fonts/martian-mono-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 :root {
-	--bg: #f4f5f7; --surface: #ffffff; --surface-2: #f8f9fb; --surface-3: #eef0f4;
-	--border: #e3e6eb; --border-strong: #d0d5dd;
-	--text: #1c2230; --muted: #626b7a; --faint: #98a1b0;
-	--accent: #4a63d8; --accent-strong: #3a52c4; --accent-soft: #eef1fc; --accent-line: #c9d2f5;
-	--good: #1d7a55; --good-soft: #e8f5ee; --bad: #c2413b; --bad-soft: #fcecea; --warm: #a8661a; --warm-soft: #fbf2e4;
-	--crop: #f2c94c;
-	--shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 2px 6px rgba(16, 24, 40, .04);
-	--radius: 12px;
-	color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #0f1116; --surface: #171a21; --surface-2: #1c2028; --surface-3: #232833;
-		--border: #2a303b; --border-strong: #3a4250;
-		--text: #e6e8ee; --muted: #a0a8b6; --faint: #6f7887;
-		--accent: #8098ff; --accent-strong: #97abff; --accent-soft: rgba(128, 152, 255, .13); --accent-line: rgba(128, 152, 255, .35);
-		--good: #4cc38a; --good-soft: rgba(76, 195, 138, .13); --bad: #f07a73; --bad-soft: rgba(240, 122, 115, .13); --warm: #e0a556; --warm-soft: rgba(224, 165, 86, .13);
-		--shadow: none;
-		color-scheme: dark;
-	}
+	--night: #0b1213; --stage: #060b0c; --s1: #121b1c; --s2: #1a2526; --s3: #243133; --line: #2c3a3c;
+	--ink: #eef3f1; --ink-muted: #a9b7b4; --ink-quiet: #85948f;
+	--lamp: #ffb45e; --lamp-soft: rgba(255, 180, 94, .14); --on-lamp: #1a1006;
+	--aqua: #62d4c6; --aqua-soft: rgba(98, 212, 198, .14);
+	--rose: #f49ab2; --rose-soft: rgba(244, 154, 178, .14);
+	--danger: #ff8a80; --danger-soft: rgba(255, 138, 128, .14);
+	--glass: rgba(11, 18, 19, .66);
+	--font-display: "Krona One", "Segoe UI Black", sans-serif;
+	--font-sans: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+	--font-mono: "Martian Mono", "Cascadia Mono", Consolas, monospace;
+	--radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-xl: 28px;
+	--shadow-float: 0 18px 40px rgba(0, 0, 0, .45);
+	/* the older names, still used by editor.css */
+	--bg: var(--night); --surface: var(--s1); --surface-2: var(--s2); --surface-3: var(--s3);
+	--border: #1f2a2c; --border-strong: var(--line);
+	--text: var(--ink); --muted: var(--ink-muted); --faint: var(--ink-quiet);
+	--accent: var(--lamp); --accent-strong: #ffc684; --accent-soft: var(--lamp-soft); --accent-line: rgba(255, 180, 94, .45); --on-accent: var(--on-lamp);
+	--good: var(--aqua); --good-soft: var(--aqua-soft); --bad: var(--danger); --bad-soft: var(--danger-soft); --warm: var(--lamp); --warm-soft: var(--lamp-soft);
+	--crop: var(--lamp);
+	--shadow: none;
+	--radius: var(--radius-lg);
+	color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-button, input, select { font: inherit; color: inherit; }
+body { background: var(--night); color: var(--ink); font: 14px/1.5 var(--font-sans); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 .num { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); font-size: 12px; }
+:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+svg.i { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; } }
 
-/* ---------- top bar */
-.topbar { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 10px 24px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
-.topbar-right { justify-self: end; display: flex; align-items: center; gap: 14px; min-width: 0; }
-/* while the Edit tab is open (body.tab-edit, set by ui/editor.js) the edit's name and Export take the brand's place */
-.topbar .ed-bar-left, .topbar .ed-bar-right { display: none; }
-body.tab-edit .topbar .ed-bar-left, body.tab-edit .topbar .ed-bar-right { display: flex; }
-body.tab-edit .brand-text { display: none; }
-@media (max-width: 900px) { .topbar { grid-template-columns: minmax(0, 1fr) auto; } .topbar .tabs { grid-row: 2; grid-column: 1 / -1; justify-self: center; } }
-/* the two tabs: big, with what each one is for; the active one is filled */
-.tabs { display: flex; gap: 6px; padding: 5px; border-radius: 14px; background: var(--surface-3); border: 1px solid var(--border); }
-.tabs button { display: flex; align-items: center; gap: 12px; min-width: 200px; padding: 9px 22px 9px 16px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; text-align: left; transition: background .15s, color .15s; }
-.tabs button svg { flex: none; }
-.tabs button b { display: block; font-size: 16.5px; font-weight: 700; line-height: 1.2; }
-.tabs button small { display: block; font-size: 12px; line-height: 1.3; }
-.tabs button:hover:not(.active) { background: var(--surface); color: var(--text); }
-.tabs button.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent); }
-.tabs button.active small { color: rgba(255, 255, 255, .88); }
-/* short windows: a slimmer top bar (the tabs keep their big names), so the videos keep their room */
-@media (max-height: 820px) and (min-width: 761px) { .topbar { padding-top: 6px; padding-bottom: 6px; } .tabs { padding: 4px; } .tabs button { padding: 6px 18px 6px 14px; } .tabs button small { display: none; } }
-.update-banner { max-width: 2400px; margin: 16px 24px 0; padding: 12px 16px; border-radius: 10px; background: var(--warm-soft); border: 1px solid color-mix(in srgb, var(--warm) 40%, transparent); color: var(--text); font-size: 14px; }
-.update-banner b { color: var(--warm); }
-.brand { display: flex; align-items: center; gap: 12px; }
-.mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #8fd3c8)); display: grid; place-items: center; color: #fff; box-shadow: var(--shadow); }
-.brand h1 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
-.brand p { margin: 0; font-size: 12px; color: var(--muted); }
-.status-pill { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; padding: 5px 12px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
-.status-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-.status-pill.running .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: pulse 1.6s ease-in-out infinite; }
-.status-pill.done .dot { background: var(--good); }
-.status-pill.paused .dot { background: var(--warm); }
-@keyframes pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
+/* ---------- shell: the rail on the left, the screens beside it */
+.app { display: flex; align-items: flex-start; min-height: 100vh; }
+.rail { position: sticky; top: 0; flex: 0 0 84px; height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 0; background: var(--s1); z-index: 20; }
+.rail-mark { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 20px; border-radius: 14px; background: var(--lamp); color: var(--on-lamp); font: 20px/1 var(--font-display); }
+.rail-tabs { display: flex; flex-direction: column; gap: 8px; }
+.rail-tabs button { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 72px; padding: 4px 0; border: 0; background: transparent; color: var(--ink-muted); font-size: 11.5px; font-weight: 500; cursor: pointer; }
+.rail-tabs .ic { position: relative; display: grid; place-items: center; width: 48px; height: 34px; border-radius: 999px; transition: background .16s, color .16s; }
+.rail-tabs button:hover .ic { background: var(--s2); color: var(--ink); }
+.rail-tabs button.active { color: var(--ink); }
+.rail-tabs button.active .ic { background: var(--lamp-soft); color: var(--lamp); }
+.rail-tabs .ring { position: absolute; inset: -3px; border-radius: 999px; border: 2px solid var(--lamp); display: none; }
+.rail-tabs button.busy .ring { display: block; }
+.rail-tabs .pct { font: 10px var(--font-mono); color: var(--lamp); }
+.rail-tabs .pct:empty { display: none; }
+.rail-spacer { flex: 1; }
+.rail-offline { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--aqua); font-size: 11px; cursor: default; }
+.content { flex: 1; min-width: 0; }
+@media (max-width: 760px) {
+	.app { flex-direction: column; }
+	.rail { position: sticky; flex: none; width: 100%; height: auto; flex-direction: row; padding: 8px 16px; gap: 12px; }
+	.rail-mark { margin: 0; width: 36px; height: 36px; font-size: 16px; }
+	.rail-tabs { flex-direction: row; }
+	.rail-offline { flex-direction: row; }
+}
+.update-banner { margin: 20px 28px 0; padding: 12px 16px; border-radius: var(--radius-md); background: var(--lamp-soft); color: var(--ink); font-size: 14px; }
+.update-banner b { color: var(--lamp); }
 
-/* ---------- layout */
-.layout { display: grid; grid-template-columns: clamp(330px, 21vw, 440px) minmax(0, 1fr); gap: 20px; max-width: 2400px; margin: 0 auto; padding: 20px 24px 60px; align-items: start; }
-@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } .queue-panel { position: static !important; max-height: none !important; } }
-.workspace { display: grid; gap: 20px; min-width: 0; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
-.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 0; }
-.card-head h2 { font-size: 15px; font-weight: 650; margin: 0; display: flex; align-items: center; gap: 8px; letter-spacing: -.005em; }
-.card-body { padding: 14px 18px 18px; }
-.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
-.muted { color: var(--muted); }
-.small { font-size: 12.5px; }
-.count { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-3); border-radius: 99px; padding: 1px 8px; }
+/* ---------- one screen: a title row, then the work */
+.view { padding: 24px 28px 40px; }
+@media (max-width: 760px) { .view { padding: 16px; } }
+.view-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.view-head .titles { flex: 1 1 280px; min-width: 0; }
+.screen-title { margin: 0; font: 400 24px/30px var(--font-display); letter-spacing: -.01em; }
+.view-head .sub { margin: 2px 0 0; font-size: 13px; color: var(--ink-muted); }
+.eyebrow { margin: 0; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-quiet); }
+.muted { color: var(--ink-muted); }
+.small { font-size: 13px; }
+.count { font: 11px var(--font-mono); color: var(--ink-quiet); }
+.figure { font: 400 44px/48px var(--font-display); letter-spacing: -.02em; }
 
 /* ---------- controls */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; font-weight: 500; transition: background .15s, border-color .15s, color .15s; white-space: nowrap; }
-.btn:hover:not(:disabled) { border-color: var(--accent-line); background: var(--accent-soft); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--s2); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .16s, color .16s, box-shadow .16s; }
+.btn:hover:not(:disabled) { background: var(--s3); }
 .btn:disabled { opacity: .45; cursor: default; }
-.btn.sm { padding: 5px 10px; font-size: 13px; }
-.btn.block { width: 100%; padding: 10px 14px; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-.btn.primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
-.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); }
-.btn.quiet:hover:not(:disabled) { background: var(--surface-3); border-color: transparent; color: var(--text); }
-.btn.danger { color: var(--bad); }
-.btn.danger:hover:not(:disabled) { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
-.btn.on { background: var(--crop); border-color: var(--crop); color: #1c2230; }
-.icon-btn { width: 28px; height: 28px; display: inline-grid; place-items: center; border-radius: 7px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-.icon-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
+.btn.sm { height: 32px; padding: 0 14px; font-size: 13px; }
+.btn.block { width: 100%; }
+.btn.primary { height: 56px; padding: 0 28px; background: var(--lamp); color: var(--on-lamp); font-size: 15px; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.btn.primary.sm { height: 40px; padding: 0 20px; font-size: 14px; }
+.btn.primary:hover:not(:disabled) { background: var(--accent-strong); }
+.btn.quiet { background: transparent; color: var(--ink-muted); }
+.btn.quiet:hover:not(:disabled) { background: var(--s2); color: var(--ink); }
+.btn.danger { background: transparent; color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+.btn.danger:hover:not(:disabled) { background: var(--danger-soft); }
+.btn.on { background: var(--lamp); color: var(--on-lamp); }
+.btn.icon { width: 40px; padding: 0; }
+.icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 999px; border: 0; background: transparent; color: var(--ink-muted); cursor: pointer; }
+.icon-btn:hover:not(:disabled) { background: var(--s3); color: var(--ink); }
 .icon-btn:disabled { opacity: .3; cursor: default; }
-.icon-btn.danger:hover { color: var(--bad); background: var(--bad-soft); }
-.input, select.input { width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); }
-.input:focus, select.input:focus { outline: 2px solid var(--accent-line); outline-offset: 0; border-color: var(--accent); }
-.input.time { width: 96px; font-variant-numeric: tabular-nums; }
-.segmented { display: inline-flex; padding: 3px; gap: 2px; border-radius: 9px; background: var(--surface-3); }
-.segmented button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 500; font-size: 13px; }
-.segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
-.field label.label, .label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
-.check { display: flex; gap: 9px; align-items: flex-start; cursor: pointer; }
-.check input { margin-top: 3px; accent-color: var(--accent); }
-.check small { display: block; color: var(--muted); font-size: 12px; }
-input[type=range] { width: 100%; accent-color: var(--accent); }
-.switch { position: relative; flex: none; width: 36px; height: 20px; margin-top: 1px; }
+.icon-btn.danger:hover { color: var(--danger); background: var(--danger-soft); }
+.input, select.input { width: 100%; height: 40px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--line); background: var(--s2); color: var(--ink); }
+.input:focus, select.input:focus { outline: 2px solid var(--lamp); outline-offset: 1px; }
+.input.time { width: 104px; height: 32px; padding: 0 10px; font: 12px var(--font-mono); border-radius: 999px; }
+.input::placeholder { color: var(--ink-quiet); }
+.segmented { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: var(--s1); }
+.segmented button { height: 32px; border: 0; background: transparent; padding: 0 14px; border-radius: 999px; cursor: pointer; color: var(--ink-muted); font-weight: 500; font-size: 13px; transition: background .16s, color .16s; }
+.segmented button:hover:not(.active):not(:disabled) { color: var(--ink); }
+.segmented button.active { background: var(--s3); color: var(--ink); font-weight: 600; }
+.segmented button:disabled { opacity: .45; cursor: default; }
+.field label.label, .label { display: block; font-size: 13px; color: var(--ink-muted); margin-bottom: 6px; font-weight: 500; }
+.check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--lamp); }
+.check small { display: block; color: var(--ink-quiet); font-size: 12.5px; }
+input[type=range] { width: 100%; accent-color: var(--lamp); }
+.switch { position: relative; flex: none; width: 40px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-.switch span { position: absolute; inset: 0; border-radius: 99px; background: var(--border-strong); transition: background .15s; }
-.switch span::after { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
-.switch input:checked + span { background: var(--accent); }
-.switch input:checked + span::after { transform: translateX(16px); }
-.switch input:focus-visible + span { outline: 2px solid var(--accent-line); outline-offset: 2px; }
-.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
-.chip.running { background: var(--accent-soft); color: var(--accent); }
-.chip.done { background: var(--good-soft); color: var(--good); }
-.chip.error { background: var(--bad-soft); color: var(--bad); }
-.chip.cancelled, .chip.paused { background: var(--warm-soft); color: var(--warm); }
-.badge { display: inline-flex; font-size: 11.5px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--s3); transition: background .16s; cursor: pointer; }
+.switch span::after { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink-muted); transition: transform .16s, background .16s; }
+.switch input:checked + span { background: var(--lamp); }
+.switch input:checked + span::after { transform: translateX(16px); background: var(--on-lamp); }
+.switch input:focus-visible + span { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; font-size: 12px; font-weight: 600; padding: 0 10px; border-radius: 999px; white-space: nowrap; background: var(--s2); color: var(--ink-muted); }
+.chip.running { background: var(--lamp-soft); color: var(--lamp); }
+.chip.done { background: var(--aqua-soft); color: var(--aqua); }
+.chip.error { background: var(--danger-soft); color: var(--danger); }
+.chip.cancelled, .chip.paused { background: var(--s2); color: var(--ink-muted); }
+.chip.person { background: var(--rose-soft); color: var(--rose); }
+.badge { display: inline-flex; align-items: center; height: 22px; font-size: 12px; padding: 0 9px; border-radius: 999px; color: var(--ink-muted); background: var(--s2); white-space: nowrap; }
+.status-pill { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; height: 32px; padding: 0 14px; border-radius: 999px; background: var(--s1); font-size: 13px; color: var(--ink-muted); }
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-quiet); }
+.status-pill.running .dot { background: var(--lamp); box-shadow: 0 0 0 4px var(--lamp-soft); animation: pulse 1.6s ease-in-out infinite; }
+.status-pill.done .dot { background: var(--aqua); box-shadow: none; }
+.status-pill.paused .dot { background: var(--ink-muted); box-shadow: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
+.link { border: 0; background: none; color: var(--ink-muted); cursor: pointer; font-size: 13px; font-weight: 600; padding: 4px 0; }
+.link:hover { color: var(--lamp); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.note { margin-top: 12px; padding: 10px 14px; border-radius: var(--radius-md); background: var(--s1); color: var(--ink-muted); font-size: 13px; }
+kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; font: 10.5px var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--s2); color: var(--ink); }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--lamp); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; vertical-align: -2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.card { background: var(--s1); border-radius: var(--radius-lg); }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 0; }
+.card-head h2 { font-size: 15px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; }
+.card-body { padding: 14px 18px 18px; }
 
-/* ---------- queue */
-.queue-panel { position: sticky; top: 76px; display: flex; flex-direction: column; max-height: calc(100vh - 96px); }
-.queue-actions { display: flex; gap: 6px; }
-.dropzone { margin: 14px 18px 0; padding: 18px; border: 1.5px dashed var(--border-strong); border-radius: 10px; text-align: center; color: var(--muted); background: var(--surface-2); transition: border-color .15s, background .15s; }
-.dropzone svg { color: var(--accent); margin-bottom: 4px; }
-.dropzone b { color: var(--text); font-weight: 600; display: block; }
-.dropzone.compact { padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.dropzone.compact svg { margin: 0; }
-.dropzone.compact b { display: inline; }
-.dropzone.compact .hint { display: none; }
-.queue { list-style: none; margin: 12px 0 0; padding: 0 10px; overflow-y: auto; flex: 1 1 auto; min-height: 60px; }
-.q-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; position: relative; }
-.q-item:hover { background: var(--surface-2); }
-.q-item.selected { background: var(--accent-soft); border-color: var(--accent-line); }
-.q-thumb { width: 64px; height: 44px; border-radius: 7px; background: var(--surface-3) center/cover no-repeat; position: relative; overflow: hidden; }
-.q-index { position: absolute; left: 4px; top: 3px; font-size: 10.5px; font-weight: 700; color: #fff; background: rgba(0, 0, 0, .45); border-radius: 4px; padding: 0 4px; }
-.q-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.q-meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.q-badges { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-.q-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.q-tools { display: flex; gap: 0; opacity: 0; transition: opacity .12s; }
-.q-item:hover .q-tools, .q-item.selected .q-tools { opacity: 1; }
-.q-bar { height: 3px; border-radius: 99px; background: var(--surface-3); margin-top: 6px; overflow: hidden; }
-.q-bar div { height: 100%; background: var(--accent); width: 0; transition: width .6s ease; }
-.q-empty { padding: 24px 12px; text-align: center; color: var(--faint); font-size: 13px; }
-.queue-links { display: flex; justify-content: space-between; padding: 6px 18px 0; }
-.link { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12.5px; padding: 4px 0; }
-.link:hover { color: var(--accent); text-decoration: underline; }
-.queue-foot { border-top: 1px solid var(--border); margin-top: 10px; padding: 14px 18px 18px; display: grid; gap: 12px; }
-.totals { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
-.totals b { color: var(--text); font-weight: 600; }
-
-/* ---------- progress */
-.progress-card { border-color: var(--accent-line); }
-.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.progress-top h2 { font-size: 15px; margin: 0; font-weight: 650; }
-.bar { height: 10px; border-radius: 99px; background: var(--surface-3); overflow: hidden; margin-top: 12px; }
-.bar > div { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #8fd3c8)); transition: width .6s ease; }
-.bar.thin { height: 4px; margin-top: 8px; }
-.bar.good > div { background: var(--good); }
-.bar.bad > div { background: var(--bad); }
-.bar.paused > div { background: var(--warm); }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
-@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; }
-.stat small { display: block; color: var(--muted); font-size: 12px; }
-.stat b { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-.current { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-.current .q-thumb { width: 56px; height: 40px; }
-.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin-top: 12px; }
-.step { font-size: 11.5px; color: var(--faint); border-top: 3px solid var(--surface-3); padding-top: 5px; line-height: 1.3; }
-.step.done { color: var(--muted); border-color: var(--good); }
-.step.cached, .step.skipped { color: var(--muted); border-color: var(--border-strong); }
-.step.running { color: var(--text); font-weight: 600; border-color: var(--accent); }
-.progress-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-pre.log { margin: 12px 0 0; max-height: 260px; overflow: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font: 11.5px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
-.error-box { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); white-space: pre-wrap; font-size: 13px; }
-
-/* ---------- editor */
-.editor-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-.editor-head h2 { font-size: 17px; margin: 0; font-weight: 650; word-break: break-all; letter-spacing: -.01em; }
-.editor-meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.player-box { position: relative; margin-top: 14px; }
-/* the player grows with the window: on a large screen most of the window's height (the page scrolls to the tools) */
-video { width: 100%; max-height: max(440px, calc(100vh - 330px)); background: #0b0d12; border-radius: 10px; display: block; }
-.preview-wait { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; border-radius: 10px; background: rgba(8, 10, 14, .78); color: #e6e8ee; text-align: center; padding: 20px; }
+/* ---------- Upscale: the chosen video and the row of videos on the left, the recipe on the right */
+.upscale-grid { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 420px); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .upscale-grid { grid-template-columns: minmax(0, 1fr); } }
+.work { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.editor { display: flex; flex-direction: column; gap: 12px; }
+.editor-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.editor-head h2 { font-size: 18px; line-height: 24px; margin: 4px 0 0; font-weight: 600; word-break: break-all; }
+.editor-meta { color: var(--ink-quiet); font: 12px var(--font-mono); margin-top: 2px; }
+.stage { position: relative; border-radius: var(--radius-xl); background: var(--stage); overflow: hidden; }
+.player-box { position: relative; }
+video { width: 100%; display: block; background: var(--stage); }
+#player { max-height: max(260px, calc(100vh - 560px)); cursor: pointer; }
+.preview-wait { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: rgba(6, 11, 12, .82); color: var(--ink); text-align: center; padding: 20px; }
 .preview-wait > div { width: min(420px, 90%); }
-.preview-wait b { font-size: 15px; }
-.preview-wait small { display: block; margin-top: 10px; color: #a0a8b6; font-size: 12.5px; }
+.preview-wait b { font-size: 15px; font-weight: 600; }
+.preview-wait small { display: block; margin-top: 10px; color: var(--ink-muted); font-size: 13px; }
 .crop-layer { position: absolute; overflow: hidden; pointer-events: none; }
-.crop-layer.editing { pointer-events: auto; cursor: crosshair; outline: 2px dashed var(--crop); }
-.crop-rect { position: absolute; border: 2px solid var(--crop); box-shadow: 0 0 0 9999px rgba(8, 10, 14, .55); }
-.crop-layer.editing .crop-rect { cursor: move; }
-.crop-rect .h { position: absolute; width: 14px; height: 14px; background: var(--crop); border-radius: 3px; display: none; }
+.crop-layer.editing { pointer-events: auto; cursor: crosshair; outline: 2px dashed var(--lamp); }
+.crop-rect { position: absolute; border: 2px dashed var(--lamp); box-shadow: 0 0 0 9999px rgba(6, 11, 12, .6); }
+.crop-layer.editing .crop-rect { cursor: move; border-style: solid; }
+.crop-rect .h { position: absolute; width: 14px; height: 14px; background: var(--lamp); border-radius: 4px; display: none; }
 .crop-layer.editing .crop-rect .h { display: block; }
 .crop-rect .nw { left: -8px; top: -8px; cursor: nwse-resize; }
 .crop-rect .ne { right: -8px; top: -8px; cursor: nesw-resize; }
@@ -202,214 +182,320 @@ video { width: 100%; max-height: max(440px, calc(100vh - 330px)); background: #0
 .crop-rect .se { right: -8px; bottom: -8px; cursor: nwse-resize; }
 .compare-layer { position: absolute; overflow: hidden; cursor: ew-resize; touch-action: none; user-select: none; }
 .compare-layer canvas { display: block; width: 100%; height: 100%; }
-.compare-line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3); pointer-events: none; }
-.compare-line span { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: #fff; color: #1c2230; display: grid; place-items: center; box-shadow: 0 1px 5px rgba(0, 0, 0, .45); }
-.compare-tag { position: absolute; top: 8px; padding: 2px 8px; border-radius: 6px; background: rgba(8, 10, 14, .62); color: #fff; font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap; }
-.compare-tag.left { left: 8px; }
-.compare-tag.right { right: 8px; }
-input[type=range].inline { width: 190px; }
-.timeline { position: relative; height: 54px; border-radius: 8px; margin-top: 10px; background: var(--surface-3) center/100% 100% no-repeat; cursor: pointer; user-select: none; touch-action: none; overflow: hidden; }
-.timeline .shade { position: absolute; top: 0; bottom: 0; background: rgba(8, 10, 14, .6); pointer-events: none; }
-.timeline .sel { position: absolute; top: 0; bottom: 0; border: 2px solid var(--accent); border-radius: 6px; pointer-events: none; }
-.timeline .handle { position: absolute; top: 0; bottom: 0; width: 12px; margin-left: -6px; background: var(--accent); border-radius: 4px; cursor: ew-resize; display: grid; place-items: center; }
-.timeline .handle::after { content: ''; width: 2px; height: 16px; background: rgba(255, 255, 255, .85); border-radius: 1px; }
-.timeline .playhead { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); pointer-events: none; }
-.tool-rows { display: grid; gap: 14px; margin-top: 16px; }
-.tool-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: center; }
-@media (max-width: 640px) { .tool-row { grid-template-columns: minmax(0, 1fr); } }
-.tool-row .eyebrow { margin: 0; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
-.note { margin-top: 14px; padding: 9px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-size: 12.5px; }
-.empty { padding: 48px 24px; text-align: center; }
-.empty h2 { font-size: 18px; margin: 12px 0 6px; }
-.empty p { color: var(--muted); max-width: 460px; margin: 0 auto; }
-.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; text-align: left; }
+.compare-line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; }
+.compare-line span { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: var(--ink); color: var(--night); display: grid; place-items: center; }
+.compare-tag { position: absolute; top: 12px; display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(16px); color: var(--ink); font-size: 12.5px; font-weight: 600; pointer-events: none; white-space: nowrap; }
+.compare-tag.left { left: 12px; color: var(--ink-muted); }
+.compare-tag.right { right: 12px; }
+/* transport: play, the counter, the section on a strip of frames, sound and full screen */
+.transport { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: var(--radius-lg); background: var(--s1); }
+.play-btn { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--lamp); color: var(--on-lamp); cursor: pointer; }
+.play-btn svg { width: 16px; height: 16px; }
+.stamp { flex: none; font: 500 14px var(--font-mono); color: var(--lamp); white-space: nowrap; }
+.stamp small { font-size: 11px; font-weight: 400; color: var(--ink-quiet); }
+.timeline { position: relative; flex: 1; min-width: 120px; height: 44px; border-radius: var(--radius-sm); background: var(--s2) center/100% 100% no-repeat; cursor: pointer; user-select: none; touch-action: none; overflow: hidden; }
+.timeline .shade { position: absolute; top: 0; bottom: 0; background: rgba(6, 11, 12, .7); pointer-events: none; }
+.timeline .sel { position: absolute; top: 0; bottom: 0; border: 2px solid var(--lamp); border-radius: 6px; pointer-events: none; }
+.timeline .handle { position: absolute; top: 0; bottom: 0; width: 12px; margin-left: -6px; background: var(--lamp); border-radius: 4px; cursor: ew-resize; display: grid; place-items: center; }
+.timeline .handle::after { content: ''; width: 2px; height: 16px; background: var(--on-lamp); border-radius: 1px; opacity: .6; }
+.timeline .playhead { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--ink); box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); pointer-events: none; }
+/* the three things to change on a video, one at a time */
+.tools-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tool-tabs { display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--s1); }
+.tool-tabs button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 16px 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.tool-tabs button small { font: 11px var(--font-mono); font-weight: 400; color: var(--ink-quiet); }
+.tool-tabs button.active { background: var(--ink); color: var(--night); }
+.tool-tabs button.active small { color: var(--s3); }
+.keys { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-quiet); }
+.keys span { display: inline-flex; align-items: center; gap: 5px; }
+.tool-rows { display: block; }
+.tool-row { display: none; }
+.tool-row.active { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 40px; }
+.tool-row.active > .row { flex: 1; }
+.tool-row .eyebrow { display: none; }
+input[type=range].inline { width: 200px; }
+/* the row of videos to upscale, left to right in the order they are done */
+.tray-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.tray-head .small { color: var(--ink-quiet); }
+.tray-head .links { margin-left: auto; display: flex; gap: 16px; }
+.tray { display: flex; gap: 16px; padding: 4px 4px 8px; overflow-x: auto; }
+.queue { display: flex; gap: 16px; list-style: none; margin: 0; padding: 0; }
+.q-item { position: relative; flex: 0 0 204px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.q-thumb { position: relative; height: 115px; border-radius: var(--radius-md); background: var(--s2) center/cover no-repeat; overflow: hidden; transition: outline-color .16s; outline: 2px solid transparent; outline-offset: 3px; }
+.q-item:hover .q-thumb { outline-color: var(--line); }
+.q-item.selected .q-thumb { outline-color: var(--lamp); }
+.q-index, .q-len { position: absolute; display: inline-grid; place-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(16px); font: 11px var(--font-mono); color: var(--ink); }
+.q-index { left: 8px; top: 8px; min-width: 22px; padding: 0 6px; }
+.q-item.running .q-index { background: var(--lamp); color: var(--on-lamp); }
+.q-item.done .q-index { background: var(--aqua); color: var(--night); }
+.q-len { right: 8px; bottom: 8px; }
+.q-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(238, 243, 241, .16); }
+.q-bar div { height: 100%; background: var(--lamp); width: 0; transition: width .6s ease; }
+.q-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-meta { font: 11px var(--font-mono); color: var(--ink-quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-state { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-quiet); }
+.q-state .dot { width: 7px; height: 7px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor; flex: none; }
+.q-state.running, .q-state.paused { color: var(--lamp); }
+.q-state.running .dot { background: var(--lamp); box-shadow: none; }
+.q-state.paused { color: var(--ink-muted); }
+.q-state.done { color: var(--aqua); }
+.q-state.done .dot { background: var(--aqua); box-shadow: none; }
+.q-state.error { color: var(--danger); }
+.q-state.error .dot { background: var(--danger); box-shadow: none; }
+.q-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.q-tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(16px); opacity: 0; transition: opacity .12s; }
+.q-tools .icon-btn { width: 28px; height: 28px; color: var(--ink); }
+.q-item:hover .q-tools, .q-item.selected .q-tools, .q-item:focus-within .q-tools { opacity: 1; }
+.q-empty { display: flex; align-items: center; height: 115px; padding: 0 8px; color: var(--ink-quiet); font-size: 13px; }
+.add-tile { flex: 0 0 204px; height: 115px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1.5px dashed var(--line); border-radius: var(--radius-md); background: transparent; color: var(--ink-muted); font-size: 14px; font-weight: 600; cursor: pointer; transition: border-color .16s, color .16s; }
+.add-tile:hover { border-color: var(--lamp); color: var(--ink); }
+.add-tile small { font-size: 12px; font-weight: 400; color: var(--ink-quiet); }
+/* first visit: what the screen is for */
+.empty { padding: 48px 32px; text-align: center; border-radius: var(--radius-xl); background: var(--s1); }
+.empty h2 { font: 400 22px/28px var(--font-display); margin: 16px 0 8px; }
+.empty p { color: var(--ink-muted); max-width: 480px; margin: 0 auto; }
+.empty .row { justify-content: center; margin-top: 20px; }
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 28px; text-align: left; counter-reset: how; }
 @media (max-width: 700px) { .how { grid-template-columns: minmax(0, 1fr); } }
-.how div { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 13px; color: var(--muted); }
-.how b { display: block; color: var(--text); margin-bottom: 2px; }
+.how div { background: var(--s2); border-radius: var(--radius-md); padding: 14px 16px; font-size: 13px; color: var(--ink-muted); }
+.how b { display: block; color: var(--ink); margin-bottom: 2px; font-size: 14px; }
 
-/* ---------- settings */
+/* ---------- the right-hand panel: the recipe and Start, or the progress */
+.side-panel { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 22px; padding: 28px; border-radius: var(--radius-lg); background: var(--s1); max-height: calc(100vh - 48px); overflow-y: auto; }
+@media (max-width: 1100px) { .side-panel { position: static; max-height: none; } }
+.recipe { position: relative; display: flex; flex-direction: column; gap: 14px; }
+.recipe-sentence { margin: 0; font-size: 20px; line-height: 32px; color: var(--ink-muted); }
+.side-panel.busy .recipe-sentence { font-size: 15px; line-height: 24px; }
+.tok { padding: 0; border: 0; background: none; color: var(--lamp); font-weight: 600; text-decoration: underline dotted; text-decoration-thickness: 2px; text-underline-offset: 6px; cursor: pointer; }
+.side-panel.busy .tok { text-underline-offset: 4px; }
+.tok:hover { color: var(--accent-strong); }
+.tok.person { color: var(--rose); }
+.tok.off { color: var(--ink); }
+.pop { position: fixed; z-index: 70; min-width: 240px; max-width: 320px; padding: 8px; border-radius: var(--radius-md); background: var(--s2); box-shadow: var(--shadow-float); display: flex; flex-direction: column; gap: 2px; }
+.pop h4 { margin: 8px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-quiet); }
+.pop button { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink); font-size: 14px; text-align: left; cursor: pointer; }
+.pop button:hover:not(:disabled) { background: var(--s3); }
+.pop button.on { background: var(--s3); }
+.pop button:disabled { opacity: .45; cursor: default; }
+.pop button .mark { width: 14px; color: var(--lamp); font-weight: 700; }
+.pop button small { margin-left: auto; padding-left: 12px; font-size: 12px; color: var(--ink-quiet); }
+.switch-list { display: flex; flex-direction: column; gap: 14px; }
+.switch-row { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.switch-row > span:first-child { flex: 1; display: flex; flex-direction: column; line-height: 1.35; font-weight: 500; }
+.switch-row small { font-size: 12.5px; font-weight: 400; color: var(--ink-quiet); }
+.settings-note { font-size: 12.5px; color: var(--ink-quiet); margin: -4px 0 0; }
+.panel-spacer { flex: 1; }
+.estimate .figure { margin: 6px 0 4px; }
+.estimate p { margin: 0; font-size: 13px; color: var(--ink-muted); }
+.merge-switch { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.merge-switch > span:last-child { display: flex; flex-direction: column; line-height: 1.35; font-weight: 500; }
+.merge-switch small { font-size: 12.5px; font-weight: 400; color: var(--ink-quiet); }
+.panel-actions { display: flex; flex-direction: column; gap: 10px; }
+.panel-actions .btn.primary { width: 100%; }
+.panel-actions .pair { display: flex; gap: 10px; }
+.panel-actions .pair .btn { flex: 1; height: 44px; }
+/* progress of the list */
+.progress { display: flex; flex-direction: column; gap: 14px; }
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.progress .figure { font-size: 56px; line-height: 58px; letter-spacing: -.03em; }
+.left-line { margin: -6px 0 0; font-size: 14px; color: var(--ink-muted); }
+.left-line b { color: var(--ink); font-weight: 600; }
+.bar { height: 10px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.bar > div { height: 100%; width: 0; border-radius: 999px; background: var(--lamp); transition: width .6s ease; }
+.bar.thin { height: 4px; margin-top: 8px; }
+.bar.good > div { background: var(--aqua); }
+.bar.bad > div { background: var(--danger); }
+.bar.paused > div { background: var(--ink-muted); }
+.current { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border-radius: var(--radius-md); background: var(--s2); }
+.current .q-thumb { height: 40px; outline: 0; }
+.steps { list-style: none; margin: 0; padding: 0 0 0 4px; display: flex; flex-direction: column; gap: 0; }
+.step { position: relative; display: flex; align-items: baseline; gap: 12px; padding: 5px 0 5px 24px; font-size: 13px; color: var(--ink-quiet); }
+.step::before { content: ''; position: absolute; left: 0; top: 9px; width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--line); background: var(--s1); z-index: 1; }
+.step::after { content: ''; position: absolute; left: 5px; top: 20px; bottom: -9px; width: 2px; background: var(--line); }
+.step:last-child::after { display: none; }
+.step small { margin-left: auto; font: 11px var(--font-mono); }
+.step.done, .step.cached { color: var(--ink-muted); }
+.step.done::before, .step.cached::before { background: var(--aqua); box-shadow: none; }
+.step.skipped { opacity: .6; }
+.step.running { color: var(--ink); font-weight: 600; }
+.step.running::before { box-shadow: inset 0 0 0 3px var(--lamp), 0 0 0 4px var(--lamp-soft); }
+.step.running small { color: var(--lamp); font-weight: 400; }
+.progress-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+#progress-pause { display: none !important; }
+pre.log { margin: 0; max-height: 260px; overflow: auto; background: var(--stage); border-radius: var(--radius-md); padding: 12px; font: 11px/1.5 var(--font-mono); color: var(--ink-muted); white-space: pre-wrap; word-break: break-all; }
+.error-box { padding: 10px 14px; border-radius: var(--radius-md); background: var(--danger-soft); color: var(--danger); white-space: pre-wrap; font-size: 13px; }
+
+/* ---------- All settings */
 .settings-groups { display: grid; gap: 0; }
-.group { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; padding: 16px 0; border-top: 1px solid var(--border); }
-.group:first-child { border-top: 0; padding-top: 4px; }
+.group { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 18px; padding: 18px 0; }
+.group + .group { border-top: 1px solid var(--s3); }
 @media (max-width: 760px) { .group { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
-.group-title b { display: block; font-size: 13.5px; font-weight: 600; }
-.group-title span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
-.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; align-items: start; }
-details.advanced summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 12px 0 0; border-top: 1px solid var(--border); list-style: none; display: flex; align-items: center; gap: 6px; }
+.group-title { display: flex; gap: 12px; align-items: flex-start; }
+.group-title .gi { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--s3); color: var(--ink-muted); }
+.group-title .gi.rose { background: var(--rose-soft); color: var(--rose); }
+.group-title .gi.lamp { background: var(--lamp-soft); color: var(--lamp); }
+.group-title .gi.aqua { background: var(--aqua-soft); color: var(--aqua); }
+.group-title b { display: block; font-size: 14px; font-weight: 600; }
+.group-title span span { display: block; font-size: 12.5px; color: var(--ink-quiet); margin-top: 2px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 18px; align-items: start; }
+details.advanced summary { cursor: pointer; color: var(--ink-muted); font-size: 13px; font-weight: 600; padding: 16px 0 0; border-top: 1px solid var(--s3); list-style: none; display: flex; align-items: center; gap: 8px; }
 details.advanced summary::-webkit-details-marker { display: none; }
-details.advanced summary::before { content: '›'; display: inline-block; transition: transform .15s; font-size: 16px; }
+details.advanced summary::before { content: '›'; display: inline-block; transition: transform .16s; font-size: 16px; }
 details.advanced[open] summary::before { transform: rotate(90deg); }
-details.advanced .fields { margin-top: 14px; }
-
-/* ---------- file size */
-.size-hint { align-self: end; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
-.size-hint b { color: var(--text); font-weight: 600; }
+details.advanced .fields { margin-top: 16px; }
+.size-hint { align-self: end; font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
+.size-hint b { color: var(--ink); font-weight: 600; }
 .meter { display: inline-flex; gap: 2px; vertical-align: -1px; margin-right: 6px; }
-.meter i { width: 6px; height: 11px; border-radius: 2px; background: var(--surface-3); }
-.meter i.on { background: var(--good); }
-.meter.mid i.on { background: var(--accent); }
-.meter.low i.on { background: var(--warm); }
-.size-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
-.size-table th { text-align: left; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); }
-.size-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.meter i { width: 5px; height: 12px; border-radius: 2px; background: var(--s3); }
+.meter i.on { background: var(--aqua); }
+.meter.mid i.on { background: var(--lamp); }
+.meter.low i.on { background: var(--danger); }
+.size-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.size-table th { text-align: left; font-weight: 600; color: var(--ink-quiet); padding: 8px; border-bottom: 1px solid var(--s3); }
+.size-table td { padding: 8px; border-bottom: 1px solid var(--s3); vertical-align: middle; }
 .size-table tr:last-child td { border-bottom: 0; }
 .size-table td.num, .size-table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.shrink-list { max-height: 260px; overflow: auto; border: 1px solid var(--border); border-radius: 9px; margin-top: 8px; }
-.shrink-list label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--border); cursor: pointer; }
-.shrink-list label:last-child { border-bottom: 0; }
-.shrink-list label:hover { background: var(--surface-2); }
+.shrink-list { max-height: 260px; overflow: auto; border-radius: var(--radius-md); background: var(--s1); margin-top: 8px; }
+.shrink-list label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 9px 12px; cursor: pointer; }
+.shrink-list label + label { border-top: 1px solid var(--s2); }
+.shrink-list label:hover { background: var(--s3); }
+.shrink-list input { accent-color: var(--lamp); }
 .shrink-list .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dialog-body { padding: 4px 18px 18px; display: grid; gap: 14px; }
-.dialog-foot { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--border); }
-dialog.panel { border: 0; padding: 0; border-radius: 14px; background: var(--surface); color: var(--text); width: min(760px, 94vw); box-shadow: 0 30px 80px rgba(0, 0, 0, .4); }
-dialog.panel::backdrop { background: rgba(8, 10, 14, .55); }
-.job { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; border: 1px dashed var(--accent-line); }
 
-/* ---------- results */
-.results { display: grid; gap: 6px; }
-.result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2); }
-.result .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.result .sub { font-size: 12px; color: var(--muted); }
-.result.merged { border-color: var(--accent-line); background: var(--accent-soft); }
+/* ---------- dialogs */
+dialog.panel, dialog.viewer { border: 0; padding: 0; border-radius: var(--radius-lg); background: var(--s2); color: var(--ink); box-shadow: var(--shadow-float); }
+dialog.panel { width: min(760px, 94vw); }
+dialog.panel.wide { width: min(960px, 94vw); }
+dialog.panel::backdrop, dialog.viewer::backdrop { background: rgba(4, 8, 9, .7); backdrop-filter: blur(4px); }
+.viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 16px 12px 24px; }
+.viewer-head b { font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dialog-body { padding: 4px 24px 20px; display: grid; gap: 16px; }
+.dialog-body .segmented, .dialog-body .shrink-list { background: var(--s1); }
+.dialog-body .input, .dialog-body select.input { background: var(--s1); }
+.dialog-foot { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 14px 24px 20px; }
+.dialog-foot .btn.primary { height: 48px; }
+dialog.viewer { width: min(2000px, 94vw); background: var(--stage); }
+dialog.viewer .viewer-head { background: var(--s1); }
+dialog.viewer video { max-height: calc(94vh - 64px); }
+.job { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border-radius: var(--radius-md); background: var(--s1); }
+
+/* ---------- Library: finished videos as a grid, the chosen one on the right */
+.lib-grid-wrap { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 420px); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .lib-grid-wrap { grid-template-columns: minmax(0, 1fr); } }
+.lib-search { position: relative; flex: 0 1 280px; display: flex; align-items: center; }
+.lib-search svg { position: absolute; left: 16px; color: var(--ink-quiet); pointer-events: none; }
+.lib-search input { height: 40px; padding: 0 16px 0 42px; border-radius: 999px; background: var(--s1); }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.filters button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--s1); color: var(--ink-muted); font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.filters button:hover:not(.active) { color: var(--ink); background: var(--s2); }
+.filters button small { font: 11px var(--font-mono); color: var(--ink-quiet); }
+.filters button.active { background: var(--ink); color: var(--night); }
+.filters button.active small { color: var(--s3); }
+.lib-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px 16px; }
+.lib-none { padding: 48px 24px; text-align: center; color: var(--ink-quiet); border-radius: var(--radius-lg); background: var(--s1); }
+.card-v { display: flex; flex-direction: column; gap: 6px; min-width: 0; cursor: pointer; border: 0; padding: 0; background: none; color: inherit; text-align: left; }
+.card-v .thumb { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-md); background: var(--s2) center/cover no-repeat; outline: 2px solid transparent; outline-offset: 3px; transition: outline-color .16s; }
+.card-v:hover .thumb { outline-color: var(--line); }
+.card-v.selected .thumb { outline-color: var(--lamp); }
+.card-v .kind { position: absolute; left: 8px; top: 8px; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(16px); font-size: 12px; font-weight: 600; }
+.card-v .kind i { width: 7px; height: 7px; border-radius: 50%; background: var(--lamp); }
+.card-v .kind.edited i { background: var(--aqua); }
+.card-v .kind.merged i { background: var(--ink); }
+.card-v .kind.smaller i { background: var(--ink-muted); }
+.card-v .len { position: absolute; right: 8px; bottom: 8px; display: inline-grid; place-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(16px); font: 11px var(--font-mono); }
+.card-v .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-v .meta { margin-top: -4px; font: 11px var(--font-mono); color: var(--ink-quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-detail { gap: 16px; padding: 24px; }
+.lib-detail .preview { position: relative; aspect-ratio: 16 / 10; border-radius: 16px; background: var(--stage) center/cover no-repeat; overflow: hidden; }
+.lib-detail .preview .play-big { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border: 0; border-radius: 50%; background: var(--glass); backdrop-filter: blur(16px); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.lib-detail h2 { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; word-break: break-word; }
+.lib-detail .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.facts { margin: 0; display: grid; grid-template-columns: 84px minmax(0, 1fr); row-gap: 8px; column-gap: 12px; align-items: baseline; }
+.facts dt { font-size: 13px; color: var(--ink-quiet); }
+.facts dd { margin: 0; font: 11.5px var(--font-mono); color: var(--ink); overflow-wrap: anywhere; }
+.facts dd .meter { vertical-align: -2px; }
+.lib-groups { display: flex; flex-direction: column; gap: 28px; }
+.lib-group > .eyebrow { margin-bottom: 12px; }
+.lib-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.lib-actions .btn { flex: 1 1 0; min-width: 0; height: 40px; padding: 0 12px; }
+.lib-actions .btn.primary { flex-basis: 100%; height: 52px; }
+.lib-shrink { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: var(--s2); }
+.lib-shrink .head { display: flex; align-items: baseline; gap: 8px; }
+.lib-shrink .head b { flex: 1; font-size: 14px; }
+.lib-shrink .head span { font-size: 12.5px; color: var(--ink-quiet); }
+.lib-shrink .segmented { display: flex; background: var(--s1); }
+.lib-shrink .segmented button { flex: 1 1 auto; height: 30px; padding: 0 8px; font-size: 12.5px; white-space: nowrap; }
+.lib-shrink .go { display: flex; align-items: center; gap: 10px; }
+.lib-shrink select.input { flex: 0 0 auto; width: auto; height: 34px; padding: 0 10px; border-radius: 999px; background: var(--s1); font-size: 13px; }
+.lib-shrink .est { flex: 1; text-align: right; }
+.lib-shrink .est { font: 11.5px var(--font-mono); white-space: nowrap; }
+.lib-shrink .btn { background: var(--s3); }
+.lib-shrink .link { align-self: flex-start; padding: 0; font-weight: 500; }
+
+/* ---------- Edit: its title row (the rest is editor.css) */
+.ed-head { display: none; align-items: center; gap: 10px; flex-wrap: wrap; padding: 24px 28px 0; }
+body.tab-edit .ed-head { display: flex; }
+.ed-head .screen-title { margin-right: 10px; }
+.ed-head .ed-bar-left { flex: 1 1 400px; }
+.ed-head .ed-bar-left, .ed-head .ed-bar-right { display: flex; }
+#ed-export { height: 44px; padding: 0 22px; font-size: 14px; }
+@media (max-width: 760px) { .ed-head { padding: 16px 16px 0; } }
 
 /* ---------- overlays */
-.drop-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(3px); pointer-events: none; opacity: 0; transition: opacity .12s; }
+.drop-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(4, 8, 9, .7); backdrop-filter: blur(4px); pointer-events: none; opacity: 0; transition: opacity .12s; }
 .drop-overlay.show { opacity: 1; }
-.drop-overlay div { padding: 34px 48px; border: 2px dashed var(--accent); border-radius: 16px; background: var(--surface); text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, .18); }
-.drop-overlay b { display: block; font-size: 18px; margin-top: 8px; }
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); z-index: 60; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 13.5px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: min(560px, 90vw); box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+.drop-overlay div { padding: 40px 56px; border: 2px dashed var(--lamp); border-radius: var(--radius-xl); background: var(--s1); text-align: center; color: var(--ink-muted); }
+.drop-overlay svg { color: var(--lamp); }
+.drop-overlay b { display: block; margin: 12px 0 4px; font: 400 20px/26px var(--font-display); color: var(--ink); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); z-index: 80; background: var(--ink); color: var(--night); padding: 12px 18px; border-radius: 999px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: min(640px, 90vw); box-shadow: var(--shadow-float); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-dialog.viewer { border: 0; padding: 0; border-radius: 14px; background: var(--surface); color: var(--text); width: min(2000px, 94vw); box-shadow: 0 30px 80px rgba(0, 0, 0, .4); }
-dialog.viewer::backdrop { background: rgba(8, 10, 14, .6); }
-.viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; }
-.viewer-head b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-dialog.viewer video { border-radius: 0 0 14px 14px; max-height: calc(94vh - 60px); }
-kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface); }
-.spinner { width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; vertical-align: -2px; }
-@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 <link rel="stylesheet" href="/editor.css">
 </head>
 <body>
-<header class="topbar">
-	<div class="brand">
-		<div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></div>
-		<div class="brand-text"><h1>Video Upscaler</h1><p>Old home videos to 1080p, and editing · everything runs on this PC</p></div>
-		<div class="ed-bar-left">
-			<input class="input ed-name" id="ed-name" aria-label="Name of this edit" spellcheck="false" title="Name of this edit (also the name of the exported file)">
-			<button class="btn sm" id="ed-edits" title="Open another edit or a project file, or start a new one">Edits ▾</button>
-			<button class="icon-btn" id="ed-save-file" title="Save as a project file, to open again later (Ctrl+S)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
-			<span class="small muted ed-saved" id="ed-saved"></span>
-		</div>
+<div class="app">
+<nav class="rail" aria-label="Kinora">
+	<span class="rail-mark" aria-hidden="true">K</span>
+	<div class="rail-tabs" id="tabs" role="tablist" aria-label="What to do">
+		<button role="tab" data-tab="upscale" id="rail-upscale" class="active" aria-selected="true" title="Make old videos sharper and larger"><span class="ic"><svg class="i" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg><span class="ring"></span></span>Upscale<span class="pct" id="rail-pct"></span></button>
+		<button role="tab" data-tab="edit" aria-selected="false" title="Cut, join, speed up and add texts"><span class="ic"><svg class="i" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8.2 8.4L20 18M8.2 15.6L20 6"/></svg></span>Edit</button>
+		<button role="tab" data-tab="library" aria-selected="false" title="Your finished videos"><span class="ic"><svg class="i" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span>Library</button>
 	</div>
-	<nav class="tabs" id="tabs" role="tablist" aria-label="What to do">
-		<button role="tab" data-tab="upscale" class="active" aria-selected="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span><b>Upscale</b><small>Sharper, larger videos</small></span></button>
-		<button role="tab" data-tab="edit" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><span><b>Edit</b><small>Cut, join, speed up</small></span></button>
-	</nav>
-	<div class="topbar-right">
-		<div class="ed-bar-right">
-			<span class="small muted num" id="ed-summary"></span>
-			<button class="btn primary" id="ed-export">Export video…</button>
+	<span class="rail-spacer"></span>
+	<span class="rail-offline" title="Kinora runs on this PC and loads nothing from the internet"><svg class="i" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4"/></svg>Offline</span>
+</nav>
+<div class="content">
+<div class="update-banner" id="update-banner" hidden><b>Kinora was updated while it was running.</b> Close the Kinora window and start it again with <b>start.bat</b> to use the Edit tab. A video that is being made continues where it was.</div>
+
+<!-- ===================== Upscale ===================== -->
+<main class="view" id="upscale-tab">
+	<div class="view-head">
+		<div class="titles">
+			<h1 class="screen-title">Upscale</h1>
+			<p class="sub" id="upscale-sub">Old home videos, sharp again</p>
 		</div>
 		<div class="status-pill" id="top-status"><span class="dot"></span><span id="top-status-text">Idle</span></div>
+		<button class="btn icon quiet" id="open-input" title="Open the input folder" aria-label="Open the input folder"><svg class="i" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg></button>
+		<button class="btn" id="add-folder" title="Add every video in a folder">Add folder</button>
+		<button class="btn" id="add-files"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add videos</button>
 	</div>
-</header>
-<div class="update-banner" id="update-banner" hidden><b>The app was updated while it was running.</b> Close the “Video Upscaler” window and start it again with <b>start.bat</b> to use the Edit tab. A video that is being made continues where it was.</div>
-
-<main class="layout" id="upscale-tab">
-	<!-- ===================== queue ===================== -->
-	<aside class="card queue-panel">
-		<div class="card-head">
-			<h2>Queue <span class="count num" id="queue-count">0</span></h2>
-			<div class="queue-actions">
-				<button class="btn sm" id="add-files">Add files…</button>
-				<button class="btn sm" id="add-folder">Add folder…</button>
-			</div>
-		</div>
-		<div class="dropzone" id="dropzone">
-			<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-			<b>Drop videos or folders here</b>
-			<span class="small hint">They are copied into the input folder and added in order.</span>
-		</div>
-		<ol class="queue" id="queue"></ol>
-		<div class="queue-links">
-			<button class="link" id="clear-finished">Clear finished</button>
-			<button class="link" id="open-input">Open input folder</button>
-		</div>
-		<div class="queue-foot">
-			<div class="totals"><span id="totals-left">No videos yet</span><span id="totals-right"></span></div>
-			<label class="check">
-				<span class="switch"><input type="checkbox" id="merge"><span></span></span>
-				<span><b>Also make one merged video</b><small>All finished videos joined in queue order, with a chapter per video</small></span>
-			</label>
-			<input class="input" id="merge-name" placeholder="Name for the merged video (optional)" hidden>
-			<button class="btn primary block" id="start">Start queue</button>
-			<button class="btn block" id="pause" hidden title="Stops the video that is being made, so the GPU is free for other things. Resume continues where it stopped.">Pause</button>
-			<button class="btn danger block" id="stop" hidden title="Cancels the video that is being processed; the rest stays in the queue">Stop queue</button>
-		</div>
-	</aside>
-
-	<!-- ===================== workspace ===================== -->
-	<section class="workspace">
-		<!-- progress -->
-		<div class="card progress-card" id="progress-card" hidden>
-			<div class="card-body">
-				<div class="progress-top">
-					<h2 id="progress-title">Processing</h2>
-					<span class="muted small num" id="progress-sub"></span>
-				</div>
-				<div class="bar" id="batch-bar"><div></div></div>
-				<div class="stats">
-					<div class="stat"><small>Overall</small><b id="stat-percent">–</b></div>
-					<div class="stat"><small>Elapsed</small><b id="stat-elapsed">–</b></div>
-					<div class="stat"><small>Time left</small><b id="stat-left">–</b></div>
-					<div class="stat"><small>Ready at</small><b id="stat-eta">–</b></div>
-				</div>
-				<div class="current" id="current" hidden>
-					<div class="q-thumb" id="current-thumb"></div>
-					<div style="min-width:0">
-						<div class="q-name" id="current-name"></div>
-						<div class="small muted num" id="current-phase"></div>
-						<div class="bar thin"><div id="current-bar"></div></div>
-					</div>
-				</div>
-				<div class="steps" id="steps"></div>
-				<div class="current" id="merge-row" hidden>
-					<div class="q-thumb" style="display:grid;place-items:center;color:var(--accent)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h7M4 12h16M4 18h7M15 6l5 6-5 6"/></svg></div>
-					<div style="min-width:0">
-						<div class="q-name" id="merge-name-label">Merged video</div>
-						<div class="small muted" id="merge-detail"></div>
-						<div class="bar thin"><div id="merge-bar"></div></div>
-					</div>
-				</div>
-				<div class="error-box" id="progress-error" hidden></div>
-				<div class="progress-actions">
-					<button class="btn sm" id="progress-pause" hidden>Pause</button>
-					<button class="btn sm" id="toggle-log">Show log</button>
-					<button class="btn sm" id="progress-open-output">Open output folder</button>
-					<button class="btn sm quiet" id="progress-dismiss" hidden>Hide</button>
-				</div>
-				<pre class="log" id="log" hidden></pre>
-			</div>
-		</div>
-
-		<!-- editor / empty state -->
-		<div class="card" id="empty">
-			<div class="empty">
-				<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>
-				<h2>Add videos to get started</h2>
-				<p>Drop files or a whole folder on this page, or use <b>Add files…</b> / <b>Add folder…</b>. Each video gets its own section, and its own crop or one crop for all; the settings below apply to all of them.</p>
+	<div class="upscale-grid">
+		<section class="work" aria-label="Your videos">
+			<!-- first visit -->
+			<div class="empty" id="empty">
+				<svg class="i" width="44" height="44" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--lamp)"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10.5l6-3.5v10l-6-3.5z"/></svg>
+				<h2>Add your old home videos</h2>
+				<p>Drop videos or a whole folder anywhere on this window, or choose them on this PC. They are done one by one; you can trim or crop each one first.</p>
+				<div class="row"><button class="btn primary sm" id="empty-add">Choose videos…</button><button class="btn" id="empty-folder">Choose a folder…</button></div>
 				<div class="how">
-					<div><b>1 · Queue</b>Add videos, put them in order. Select one to choose a section or crop.</div>
-					<div><b>2 · Settings</b>Person for the face lock, resolution, frame rate — once for the whole queue.</div>
-					<div><b>3 · Start</b>Videos are done one by one. Optionally all results are merged into one file.</div>
+					<div><b>1 · Add videos</b>Put them in the order you want. Pick one to trim it or crop off black borders.</div>
+					<div><b>2 · Check the recipe</b>Resolution, frame rate, whose face to keep true, and the file size: once for all videos.</div>
+					<div><b>3 · Start</b>Videos are done one by one; you can pause at any time. Optionally they are joined into one film.</div>
 				</div>
 			</div>
-		</div>
-		<div class="card" id="editor" hidden>
-			<div class="card-body">
+			<!-- the chosen video -->
+			<div class="editor" id="editor" hidden>
 				<div class="editor-head">
 					<div style="min-width:0">
 						<p class="eyebrow" id="editor-eyebrow">Selected video</p>
@@ -418,39 +504,55 @@ kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--bord
 					</div>
 					<div class="row" style="flex-wrap:nowrap">
 						<span class="chip" id="editor-status"></span>
-						<button class="btn sm" id="editor-edit" title="Cut, join or speed up this video in the Edit tab">Edit this video</button>
-						<button class="btn sm quiet" id="editor-reveal" title="Show the original file in Explorer">Show file</button>
+						<button class="btn sm" id="editor-edit" title="Cut, join or speed up this video in the Edit tab"><svg class="i" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8.2 8.4L20 18M8.2 15.6L20 6"/></svg>Edit this video</button>
+						<button class="btn sm quiet" id="editor-reveal" title="Show the original file in its folder">Show file</button>
 					</div>
 				</div>
-				<div class="player-box" id="player-box">
-					<video id="player" controls preload="auto"></video>
-					<div class="preview-wait" id="preview-wait" hidden><div><b id="preview-wait-text"><span class="spinner"></span> Loading the video…</b><div class="bar" id="preview-wait-bar" hidden><div></div></div><small id="preview-wait-note"></small></div></div>
-					<div class="compare-layer" id="compare-layer" title="Drag to compare the original with the adjusted brightness" hidden>
-						<canvas id="compare-canvas"></canvas>
-						<div class="compare-line" id="compare-line"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></span></div>
-						<span class="compare-tag left">Original</span><span class="compare-tag right" id="compare-tag"></span>
+				<div class="stage">
+					<div class="player-box" id="player-box">
+						<video id="player" preload="auto"></video>
+						<div class="preview-wait" id="preview-wait" hidden><div><b id="preview-wait-text"><span class="spinner"></span> Loading the video…</b><div class="bar" id="preview-wait-bar" style="margin-top:12px" hidden><div></div></div><small id="preview-wait-note"></small></div></div>
+						<div class="compare-layer" id="compare-layer" title="Drag to compare the original with the adjusted brightness" hidden>
+							<canvas id="compare-canvas"></canvas>
+							<div class="compare-line" id="compare-line"><span><svg class="i" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg></span></div>
+							<span class="compare-tag left">Original</span><span class="compare-tag right" id="compare-tag"></span>
+						</div>
+						<div class="crop-layer" id="crop-layer"><div class="crop-rect" id="crop-rect" hidden><span class="h nw"></span><span class="h ne"></span><span class="h sw"></span><span class="h se"></span></div></div>
 					</div>
-					<div class="crop-layer" id="crop-layer"><div class="crop-rect" id="crop-rect" hidden><span class="h nw"></span><span class="h ne"></span><span class="h sw"></span><span class="h se"></span></div></div>
 				</div>
-				<div class="timeline" id="timeline" title="Click to jump, drag the handles to set start and end">
-					<div class="shade" id="shade-left"></div><div class="shade" id="shade-right"></div>
-					<div class="sel" id="sel"></div><div class="playhead" id="playhead"></div>
-					<div class="handle" id="handle-start"></div><div class="handle" id="handle-end"></div>
+				<div class="transport">
+					<button class="play-btn" id="u-play" title="Play (Space)" aria-label="Play"></button>
+					<span class="stamp" id="u-time">0:00.00</span>
+					<div class="timeline" id="timeline" title="Click to jump, drag the handles to set start and end">
+						<div class="shade" id="shade-left"></div><div class="shade" id="shade-right"></div>
+						<div class="sel" id="sel"></div><div class="playhead" id="playhead"></div>
+						<div class="handle" id="handle-start"></div><div class="handle" id="handle-end"></div>
+					</div>
+					<button class="icon-btn" id="u-mute" title="Sound on/off" aria-label="Sound on/off"></button>
+					<button class="icon-btn" id="u-full" title="Full screen" aria-label="Full screen"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+				</div>
+				<div class="tools-bar">
+					<div class="tool-tabs" id="tool-tabs" role="tablist" aria-label="Change this video">
+						<button role="tab" data-tool="section" class="active"><svg class="i" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4H4v16h3M17 4h3v16h-3M9 12h6"/></svg>Section<small id="tool-section-state"></small></button>
+						<button role="tab" data-tool="crop"><svg class="i" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5V18h15.5M2.5 6H18v15.5"/></svg>Crop<small id="tool-crop-state"></small></button>
+						<button role="tab" data-tool="brightness"><svg class="i" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Brightness<small id="tool-bright-state"></small></button>
+					</div>
+					<div class="keys"><span><kbd>Space</kbd>play</span><span><kbd>I</kbd><kbd>O</kbd>start, end</span><span><kbd>←</kbd><kbd>→</kbd>one frame</span><span><kbd>B</kbd>compare brightness</span></div>
 				</div>
 				<div class="tool-rows">
-					<div class="tool-row">
+					<div class="tool-row active" data-tool="section">
 						<p class="eyebrow">Section</p>
 						<div class="row">
-							<input class="input time" id="start-text" title="Start (m:ss)"><button class="btn sm" id="set-start" title="Shortcut: I">Set start</button>
+							<input class="input time" id="start-text" title="Start (m:ss)" aria-label="Start"><button class="btn sm" id="set-start" title="Shortcut: I">Set start</button>
 							<span class="muted">–</span>
-							<input class="input time" id="end-text" title="End (m:ss)"><button class="btn sm" id="set-end" title="Shortcut: O">Set end</button>
+							<input class="input time" id="end-text" title="End (m:ss)" aria-label="End"><button class="btn sm" id="set-end" title="Shortcut: O">Set end</button>
 							<span class="sep"></span>
-							<span class="num" id="sel-length"></span>
+							<span class="mono muted" id="sel-length"></span>
 							<button class="btn sm quiet" id="play-sel">Play section</button>
 							<button class="btn sm quiet" id="whole">Whole video</button>
 						</div>
 					</div>
-					<div class="tool-row">
+					<div class="tool-row" data-tool="crop">
 						<p class="eyebrow">Crop</p>
 						<div class="row">
 							<div class="segmented" id="crop-mode">
@@ -458,17 +560,17 @@ kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--bord
 								<button data-mode="off">None</button>
 								<button data-mode="custom">Custom</button>
 							</div>
-							<button class="btn sm" id="crop-edit">Draw on video</button>
-							<button class="btn sm" id="crop-detect" title="Finds the part of the picture that changes, e.g. the webcam image inside a screen recording">Detect picture area</button>
+							<button class="btn sm quiet" id="crop-edit">Draw on video</button>
+							<button class="btn sm quiet" id="crop-detect" title="Finds the part of the picture that changes, e.g. the webcam image inside a screen recording">Find picture area</button>
 							<span class="sep"></span>
 							<div class="segmented" id="crop-scope">
 								<button data-scope="one" title="Each video has its own crop">This video</button>
 								<button data-scope="all" title="Every video that isn't made yet uses this crop, also videos you add later. Changing it on any video changes it for all. Videos of another size get the same part of the picture.">All videos</button>
 							</div>
-							<span class="small muted num" id="crop-info"></span>
+							<span class="mono muted" id="crop-info"></span>
 						</div>
 					</div>
-					<div class="tool-row" id="bright-row">
+					<div class="tool-row" data-tool="brightness" id="bright-row">
 						<p class="eyebrow">Brightness</p>
 						<div class="row">
 							<button class="btn sm" id="bright-compare" title="Shows the current frame before and after, with a divider you can drag">Compare on this frame</button>
@@ -479,95 +581,123 @@ kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--bord
 					</div>
 				</div>
 				<div class="note" id="editor-note" hidden></div>
-				<div class="small muted" style="margin-top:12px">Keys: <kbd>Space</kbd> play/pause · <kbd>I</kbd>/<kbd>O</kbd> set start/end · <kbd>←</kbd>/<kbd>→</kbd> one frame · <kbd>B</kbd> compare brightness</div>
 			</div>
-		</div>
+			<!-- the row of videos -->
+			<div id="tray-wrap">
+				<div class="tray-head">
+					<p class="eyebrow">Your videos · <span id="queue-count">0</span></p>
+					<span class="small">Done one by one, left to right. Use the arrows on a video to change the order.</span>
+					<span class="links"><button class="link" id="clear-finished">Clear finished</button></span>
+				</div>
+				<div class="tray">
+					<ol class="queue" id="queue"></ol>
+					<button class="add-tile" id="dropzone"><svg class="i" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add videos<small>or drop them on this window</small></button>
+				</div>
+			</div>
+		</section>
 
-		<!-- settings -->
-		<div class="card">
-			<div class="card-head"><h2>Settings</h2><span class="small muted" id="settings-note">Applies to every video in the queue</span></div>
-			<div class="card-body">
-				<div class="settings-groups">
-					<div class="group">
-						<div class="group-title"><b>Face lock</b><span>Keeps the face true to your reference photos</span></div>
-						<div class="fields">
-							<div class="field"><label class="label" for="person">Person</label><select class="input" id="person"></select></div>
-							<div class="field"><label class="label" for="identity">Identity strength <span id="identity-value" class="muted"></span></label><input type="range" id="identity" min="0.3" max="0.8" step="0.05" value="0.5"></div>
-						</div>
-					</div>
-					<div class="group">
-						<div class="group-title"><b>Output</b><span>Size and smoothness of the result</span></div>
-						<div class="fields">
-							<div class="field"><span class="label">Resolution</span><div class="segmented" id="height"><button data-value="720">720p</button><button data-value="1080">1080p</button><button data-value="1440">1440p</button></div></div>
-							<div class="field">
-								<label class="label" for="fps-preset">Frame rate</label>
-								<select class="input" id="fps-preset">
-									<option value="">Original</option><option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option><option value="50">50 fps</option><option value="60">60 fps</option><option value="custom">Custom…</option>
-								</select>
-								<input class="input" type="number" id="fps-custom" min="1" max="120" step="0.001" placeholder="e.g. 29.97" style="margin-top:6px" hidden>
-							</div>
-							<div class="field"><span class="label">Motion quality</span><div class="segmented" id="motion"><button data-value="best" title="Creates the in-between frames first, then upscales and face-locks every frame">Best</button><button data-value="fast" title="Blends finished frames; about 2.5× quicker">Fast</button></div></div>
-							<label class="check" style="grid-column:1/-1"><input type="checkbox" id="smooth"><span>Smooth repeated and damaged frames<small>For choppy webcam, phone and screen-recorded clips. Does nothing on clips without them.</small></span></label>
-						</div>
-					</div>
-					<div class="group">
-						<div class="group-title"><b>File size</b><span>Smaller files are easier to share</span></div>
-						<div class="fields">
-							<div class="field" style="grid-column:1/-1">
-								<div class="segmented" id="size"><button data-value="original">Full quality</button><button data-value="near">Near lossless</button><button data-value="balanced">Balanced</button><button data-value="small">Small</button></div>
-							</div>
-							<div class="field" id="format-field">
-								<label class="label" for="format">Format</label>
-								<select class="input" id="format">
-									<option value="av1">AV1 – smallest</option>
-									<option value="h265">H.265 – for iPhones</option>
-									<option value="h264">H.264 – plays everywhere</option>
-								</select>
-							</div>
-							<div class="size-hint" id="size-hint"></div>
-						</div>
-					</div>
-					<div class="group">
-						<div class="group-title"><b>Picture</b><span>Only for difficult footage</span></div>
-						<div class="fields">
-							<div class="field"><label class="label" for="denoise">Noise reduction</label><select class="input" id="denoise"><option value="off">Off (recommended)</option><option value="light">Light</option><option value="medium">Medium – noisy or low light</option><option value="strong">Strong</option></select></div>
-							<div class="field"><label class="label" for="gamma">Brightness <span id="gamma-value" class="muted"></span></label><input type="range" id="gamma" min="0.7" max="1.8" step="0.05" value="1"><button class="link" id="gamma-compare">Compare on a frame of the selected video</button></div>
-						</div>
-					</div>
-					<div class="group">
-						<div class="group-title"><b>Sound and files</b><span>What ends up in the output folder</span></div>
-						<div class="fields">
-							<label class="check"><input type="checkbox" id="audio"><span>Keep the original sound<small>Off: the videos and the merged video are silent</small></span></label>
-							<label class="check"><input type="checkbox" id="compare"><span>Side-by-side comparison videos<small>Saved in output\compare (original · upscaled · final)</small></span></label>
-						</div>
+		<!-- the recipe and Start, or the progress -->
+		<aside class="side-panel" id="side-panel" aria-label="Recipe and progress">
+			<div class="progress" id="progress-card" hidden>
+				<div class="progress-top"><p class="eyebrow" id="progress-title">Processing</p><span class="small muted num" id="progress-sub"></span></div>
+				<div class="figure num" id="stat-percent">–</div>
+				<p class="left-line"><b id="stat-left">–</b> left · ready <span id="stat-eta">–</span> · <span id="stat-elapsed">–</span> so far</p>
+				<div class="bar" id="batch-bar"><div></div></div>
+				<div class="current" id="current" hidden>
+					<div class="q-thumb" id="current-thumb"></div>
+					<div style="min-width:0">
+						<div class="q-name" id="current-name"></div>
+						<div class="small muted num" id="current-phase"></div>
+						<div class="bar thin"><div id="current-bar"></div></div>
 					</div>
 				</div>
-				<details class="advanced">
-					<summary>Advanced</summary>
-					<div class="fields">
-						<div class="field"><label class="label" for="model">Upscale model</label><select class="input" id="model"></select></div>
-						<div class="field"><label class="label" for="batch">Frames processed together</label><select class="input" id="batch"><option>21</option><option>33</option><option>45</option><option>61</option></select></div>
-						<div class="field"><label class="label" for="enhance">Face detail <span id="enhance-value" class="muted"></span></label><input type="range" id="enhance" min="0" max="100" step="5" value="50"></div>
-						<div class="field"><label class="label" for="face-enhancer">Face texture model</label><select class="input" id="face-enhancer"><option value="gfpgan_1.4">GFPGAN 1.4</option><option value="codeformer">CodeFormer</option></select></div>
-						<label class="check"><input type="checkbox" id="expression"><span>Keep original facial expression<small>LivePortrait expression restore</small></span></label>
+				<ol class="steps" id="steps"></ol>
+				<div class="current" id="merge-row" hidden>
+					<div class="q-thumb" style="display:grid;place-items:center;color:var(--lamp);background:var(--lamp-soft)"><svg class="i" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8.5 4.5L12 13 3.5 8.5zM3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5"/></svg></div>
+					<div style="min-width:0">
+						<div class="q-name" id="merge-name-label">Joined video</div>
+						<div class="small muted" id="merge-detail"></div>
+						<div class="bar thin"><div id="merge-bar"></div></div>
 					</div>
-				</details>
-			</div>
-		</div>
-
-		<!-- results -->
-		<div class="card">
-			<div class="card-head"><h2>Results</h2><div class="row"><button class="btn sm" id="shrink-open">Make smaller…</button><button class="btn sm" id="open-output">Open output folder</button></div></div>
-			<div class="card-body">
-				<div class="results" id="shrink-jobs" style="margin-bottom:12px" hidden>
-					<div class="results" id="shrink-job-rows"></div>
-					<div class="row"><button class="btn sm danger" id="shrink-stop">Stop making smaller</button><button class="btn sm quiet" id="shrink-clear">Hide failed</button></div>
 				</div>
-				<div class="results" id="results"><span class="muted small">Finished videos appear here.</span></div>
+				<div class="error-box" id="progress-error" hidden></div>
+				<div class="progress-actions">
+					<button class="btn sm" id="progress-pause" hidden>Pause</button>
+					<button class="btn sm quiet" id="toggle-log">Show log</button>
+					<button class="btn sm quiet" id="progress-open-output">Output folder</button>
+					<button class="btn sm quiet" id="progress-dismiss" hidden>Hide</button>
+				</div>
+				<pre class="log" id="log" hidden></pre>
 			</div>
-		</div>
-	</section>
+			<div class="recipe">
+				<p class="eyebrow" id="recipe-eyebrow">Recipe · all videos</p>
+				<p class="recipe-sentence" id="recipe"></p>
+				<p class="settings-note" id="settings-note">The same for every video</p>
+				<div class="switch-list">
+					<label class="switch-row"><span>Smooth damaged frames<small>For choppy webcam, phone and screen clips; does nothing on others</small></span><span class="switch"><input type="checkbox" id="smooth"><span></span></span></label>
+					<label class="switch-row"><span>Keep the original sound<small>Off makes the videos and the joined film silent</small></span><span class="switch"><input type="checkbox" id="audio"><span></span></span></label>
+					<label class="switch-row"><span>Side-by-side copies<small>Original, upscaled and final, in output\compare</small></span><span class="switch"><input type="checkbox" id="compare"><span></span></span></label>
+				</div>
+				<button class="btn sm quiet" id="all-settings" style="align-self:flex-start;padding-left:0"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 7a2 2 0 1 0 4 0a2 2 0 1 0-4 0M8 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/></svg>All settings<span style="font-weight:400;color:var(--ink-quiet)">· noise, brightness, model</span></button>
+			</div>
+			<div class="panel-spacer"></div>
+			<div class="estimate" id="estimate">
+				<p class="eyebrow">Takes about</p>
+				<div class="figure num" id="totals-right">–</div>
+				<p id="totals-left">No videos yet</p>
+				<p id="ready-at"></p>
+			</div>
+			<label class="merge-switch"><span class="switch"><input type="checkbox" id="merge"><span></span></span><span>Also join them into one video<small>One chapter per video, in the order of the row</small></span></label>
+			<input class="input" id="merge-name" placeholder="Name for the joined video (optional)" aria-label="Name for the joined video" hidden>
+			<div class="panel-actions">
+				<button class="btn primary" id="start"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></svg>Start upscaling</button>
+				<div class="pair">
+					<button class="btn" id="pause" hidden title="Stops the video that is being made, so the GPU is free for other things. Resume continues where it stopped.">Pause</button>
+					<button class="btn danger" id="stop" hidden title="Cancels the video that is being made; the others stay in the row">Stop the list</button>
+				</div>
+			</div>
+		</aside>
+	</div>
 </main>
+
+<!-- ===================== Library ===================== -->
+<main class="view" id="library-tab" hidden>
+	<div class="view-head">
+		<div class="titles">
+			<h1 class="screen-title">Library</h1>
+			<p class="sub" id="lib-sub">Your finished videos</p>
+		</div>
+		<label class="lib-search"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input class="input" type="search" id="lib-search" placeholder="Search by name" aria-label="Search by name"></label>
+		<button class="btn" id="shrink-open">Make smaller…</button>
+		<button class="btn icon quiet" id="open-output" title="Open the output folder" aria-label="Open the output folder"><svg class="i" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg></button>
+	</div>
+	<div class="filters" id="lib-filters" role="group" aria-label="Show"></div>
+	<div class="lib-grid-wrap">
+		<section class="lib-main" aria-label="Finished videos">
+			<div class="results" id="shrink-jobs" hidden>
+				<div class="results" id="shrink-job-rows" style="display:grid;gap:8px"></div>
+				<div class="row" style="margin-top:8px"><button class="btn sm danger" id="shrink-stop">Stop making smaller</button><button class="btn sm quiet" id="shrink-clear">Hide failed</button></div>
+			</div>
+			<div class="lib-groups" id="results"></div>
+		</section>
+		<aside class="side-panel lib-detail" id="lib-detail" aria-label="The chosen video"></aside>
+	</div>
+</main>
+
+<!-- ===================== Edit: title row (the tab itself is ui/editor.js) ===================== -->
+<header class="topbar ed-head" id="ed-head">
+	<div class="ed-bar-left">
+		<h1 class="screen-title">Edit</h1>
+		<input class="input ed-name" id="ed-name" aria-label="Name of this edit" spellcheck="false" title="Name of this edit (also the name of the exported file)">
+		<button class="btn sm quiet" id="ed-edits" title="Open another edit or a project file, or start a new one">Edits ▾</button>
+		<button class="icon-btn" id="ed-save-file" title="Save as a project file, to open again later (Ctrl+S)" aria-label="Save as a project file"><svg class="i" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM8 4v5h7V4M8 20v-6h8v6"/></svg></button>
+		<span class="small muted ed-saved" id="ed-saved"></span>
+	</div>
+	<div class="ed-bar-right">
+		<span class="mono muted" id="ed-summary"></span>
+		<button class="btn primary sm" id="ed-export">Export video…</button>
+	</div>
+</header>
 
 <!-- ===================== edit tab (ui/editor.js) ===================== -->
 <main class="edit-layout" id="edit-tab" hidden>
@@ -652,6 +782,8 @@ kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--bord
 		</div>
 	</section>
 </main>
+</div>
+</div>
 <div class="ed-menu" id="ed-menu" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="ed-filters"></defs></svg>
 
@@ -660,6 +792,70 @@ kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--bord
 	<b id="drop-title">Drop to add to the queue</b><span class="muted small">Videos and folders</span>
 </div></div>
 <div class="toast" id="toast"></div>
+<dialog class="panel wide" id="settings-dialog">
+	<div class="viewer-head"><b>All settings</b><button class="icon-btn" id="settings-close" title="Close" aria-label="Close">✕</button></div>
+	<div class="dialog-body">
+		<div class="settings-groups">
+			<div class="group">
+				<div class="group-title"><span class="gi rose"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/></svg></span><span><b>Face lock</b><span>Keeps a face true to its reference photos (refs\&lt;name&gt;)</span></span></div>
+				<div class="fields">
+					<div class="field"><label class="label" for="person">Person</label><select class="input" id="person"></select></div>
+					<div class="field"><label class="label" for="identity">Identity strength <span id="identity-value" class="muted"></span></label><input type="range" id="identity" min="0.3" max="0.8" step="0.05" value="0.5"></div>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title"><span class="gi lamp"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8 20h8M12 16.5V20"/></svg></span><span><b>Output</b><span>Size and smoothness of the result</span></span></div>
+				<div class="fields">
+					<div class="field"><span class="label">Resolution</span><div class="segmented" id="height"><button data-value="720">720p</button><button data-value="1080">1080p</button><button data-value="1440">1440p</button></div></div>
+					<div class="field">
+						<label class="label" for="fps-preset">Frame rate</label>
+						<select class="input" id="fps-preset">
+							<option value="">Original</option><option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option><option value="50">50 fps</option><option value="60">60 fps</option><option value="custom">Custom…</option>
+						</select>
+						<input class="input" type="number" id="fps-custom" min="1" max="120" step="0.001" placeholder="e.g. 29.97" style="margin-top:8px" hidden>
+					</div>
+					<div class="field"><span class="label">Motion quality</span><div class="segmented" id="motion"><button data-value="best" title="Creates the in-between frames first, then upscales and face-locks every frame">Best</button><button data-value="fast" title="Blends finished frames; about 2.5× quicker">Fast</button></div></div>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title"><span class="gi aqua"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/></svg></span><span><b>File size</b><span>Smaller files are easier to share</span></span></div>
+				<div class="fields">
+					<div class="field" style="grid-column:1/-1">
+						<div class="segmented" id="size"><button data-value="original">Full quality</button><button data-value="near">Near lossless</button><button data-value="balanced">Balanced</button><button data-value="small">Small</button></div>
+					</div>
+					<div class="field" id="format-field">
+						<label class="label" for="format">Format</label>
+						<select class="input" id="format">
+							<option value="av1">AV1 – smallest</option>
+							<option value="h265">H.265 – for iPhones</option>
+							<option value="h264">H.264 – plays everywhere</option>
+						</select>
+					</div>
+					<div class="size-hint" id="size-hint"></div>
+				</div>
+			</div>
+			<div class="group">
+				<div class="group-title"><span class="gi"><svg class="i" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></span><span><b>Picture</b><span>Only for difficult footage</span></span></div>
+				<div class="fields">
+					<div class="field"><label class="label" for="denoise">Noise reduction</label><select class="input" id="denoise"><option value="off">Off (recommended)</option><option value="light">Light</option><option value="medium">Medium – noisy or low light</option><option value="strong">Strong</option></select></div>
+					<div class="field"><label class="label" for="gamma">Brightness <span id="gamma-value" class="muted"></span></label><input type="range" id="gamma" min="0.7" max="1.8" step="0.05" value="1"><button class="link" id="gamma-compare">Compare on a frame of the chosen video</button></div>
+				</div>
+			</div>
+		</div>
+		<details class="advanced">
+			<summary>Advanced</summary>
+			<div class="fields">
+				<div class="field"><label class="label" for="model">Upscale model</label><select class="input" id="model"></select></div>
+				<div class="field"><label class="label" for="batch">Frames processed together</label><select class="input" id="batch"><option>21</option><option>33</option><option>45</option><option>61</option></select></div>
+				<div class="field"><label class="label" for="enhance">Face detail <span id="enhance-value" class="muted"></span></label><input type="range" id="enhance" min="0" max="100" step="5" value="50"></div>
+				<div class="field"><label class="label" for="face-enhancer">Face texture model</label><select class="input" id="face-enhancer"><option value="gfpgan_1.4">GFPGAN 1.4</option><option value="codeformer">CodeFormer</option></select></div>
+				<label class="check"><input type="checkbox" id="expression"><span>Keep original facial expression<small>LivePortrait expression restore</small></span></label>
+			</div>
+		</details>
+	</div>
+	<div class="dialog-foot"><span class="small muted">Changes are saved at once</span><button class="btn primary sm" id="settings-done">Done</button></div>
+</dialog>
+<div class="pop" id="pop" role="listbox" hidden></div>
 <dialog class="panel" id="shrink-dialog">
 	<div class="viewer-head"><b style="font-size:15px">Make videos smaller</b><button class="icon-btn" id="shrink-close" title="Close">✕</button></div>
 	<div class="dialog-body">
@@ -707,7 +903,13 @@ const ICON = {
 	down: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>',
 	remove: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
 	retry: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg>',
-	play: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'
+	play: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+	left: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>',
+	right: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>',
+	pause: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
+	playBig: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
+	sound: '<svg class="i" width="17" height="17" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+	muted: '<svg class="i" width="17" height="17" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4zM16 9.5l5 5M21 9.5l-5 5"/></svg>'
 };
 
 async function api(path, body) {
@@ -748,8 +950,16 @@ function human(seconds) {
 	const h = Math.floor(seconds / 3600), m = Math.round(seconds % 3600 / 60);
 	return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${Math.round(seconds / 60)} min`;
 }
+// short durations for big figures: "6h 04m", "12m", "40s"
+function hm(seconds) {
+	if (seconds == null || !isFinite(seconds)) return '–';
+	seconds = Math.max(Math.round(seconds), 0);
+	if (seconds < 60) return seconds + 's';
+	const minutes = Math.round(seconds / 60), h = Math.floor(minutes / 60), m = minutes % 60;
+	return h ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+}
 const timeOfDay = (epoch) => new Date(epoch * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-const statusText = { queued: 'Queued', running: 'Processing', paused: 'Paused', done: 'Done', error: 'Failed', cancelled: 'Stopped' };
+const statusText = { queued: 'Waiting', running: 'Upscaling', paused: 'Paused', done: 'Done', error: 'Failed', cancelled: 'Stopped' };
 
 // ---------------------------------------------------------------- queue list
 const selected = () => state.items.find(item => item.id === state.selected) || null;
@@ -765,24 +975,23 @@ function itemHTML(item, index) {
 	const job = state.data && state.data.job;
 	const percent = running && job ? Math.round(job.percent || 0) : 0;
 	const length = item.end - item.start;
-	const chip = running ? `<span class="chip running num">${percent}%</span>`
-		: item.status === 'paused' ? `<span class="chip paused num">Paused${job && job.status === 'paused' && job.percent ? ` · ${Math.round(job.percent)}%` : ''}</span>`
-		: item.status === 'queued' ? `<span class="chip num" title="Estimated processing time">≈ ${human(item.estimate)}</span>`
-		: `<span class="chip ${item.status}">${statusText[item.status]}</span>`;
-	const tools = running ? '' : `${item.status === 'done' && item.output ? `<button class="icon-btn" data-act="play" title="Play result">${ICON.play}</button>` : ''}${['error', 'cancelled', 'done'].includes(item.status) ? `<button class="icon-btn" data-act="retry" title="Process again">${ICON.retry}</button>` : ''}<button class="icon-btn" data-act="up" title="Move up" ${index === 0 ? 'disabled' : ''}>${ICON.up}</button><button class="icon-btn" data-act="down" title="Move down" ${index === state.items.length - 1 ? 'disabled' : ''}>${ICON.down}</button><button class="icon-btn danger" data-act="remove" title="Remove from queue">${ICON.remove}</button>`;
-	return `<div class="q-thumb" style="${item.thumb ? `background-image:url('${media(item.thumb)}')` : ''}"><span class="q-index num">${index + 1}</span></div>
-		<div style="min-width:0"><div class="q-name" title="${esc(item.path)}">${esc(item.name)}</div>
-		<div class="q-meta num">${clock(length)}${length < item.duration - 0.05 ? ' of ' + clock(item.duration) : ''} · ${item.width}×${item.height} · ${+item.fps.toFixed(2)} fps${item.has_audio ? '' : ' · no sound'}</div>
+	const line = running ? `Upscaling · ${percent}%`
+		: item.status === 'paused' ? `Paused${job && job.status === 'paused' && job.percent ? ` · ${Math.round(job.percent)}%` : ''}`
+		: item.status === 'queued' ? `Waiting · ≈ ${hm(item.estimate)}`
+		: statusText[item.status];
+	const tools = running ? '' : `${item.status === 'done' && item.output ? `<button class="icon-btn" data-act="play" title="Play result">${ICON.play}</button>` : ''}${['error', 'cancelled', 'done'].includes(item.status) ? `<button class="icon-btn" data-act="retry" title="Upscale again">${ICON.retry}</button>` : ''}<button class="icon-btn" data-act="up" title="Earlier in the row" ${index === 0 ? 'disabled' : ''}>${ICON.left}</button><button class="icon-btn" data-act="down" title="Later in the row" ${index === state.items.length - 1 ? 'disabled' : ''}>${ICON.right}</button><button class="icon-btn danger" data-act="remove" title="Remove from the row">${ICON.remove}</button>`;
+	return `<div class="q-thumb" style="${item.thumb ? `background-image:url('${media(item.thumb)}')` : ''}"><span class="q-index num">${item.status === 'done' ? '✓' : index + 1}</span><span class="q-len">${clock(length)}</span>${running ? `<div class="q-bar"><div style="width:${percent}%"></div></div>` : ''}</div>
+		<div class="q-name" title="${esc(item.path)}">${esc(item.name)}</div>
+		<div class="q-meta">${item.width}×${item.height} · ${+item.fps.toFixed(2)} fps${item.has_audio ? '' : ' · no sound'}</div>
+		<div class="q-state ${item.status}"><span class="dot"></span>${line}</div>
 		${itemBadges(item) ? `<div class="q-badges">${itemBadges(item)}</div>` : ''}
-		${running ? `<div class="q-bar"><div style="width:${percent}%"></div></div>` : ''}</div>
-		<div class="q-side">${chip}<div class="q-tools">${tools}</div></div>`;
+		${tools ? `<div class="q-tools">${tools}</div>` : ''}`;
 }
 function renderQueue() {
 	const list = $('queue'), items = state.items;
 	$('queue-count').textContent = items.length;
-	$('dropzone').classList.toggle('compact', items.length > 0);
 	const existing = new Map([...list.children].map(li => [li.dataset.id, li]));
-	if (!items.length) { list.innerHTML = '<li class="q-empty">The queue is empty</li>'; }
+	if (!items.length) { list.innerHTML = '<li class="q-empty">No videos yet</li>'; }
 	else {
 		const empty = list.querySelector('.q-empty'); if (empty) empty.remove();
 		items.forEach((item, index) => {
@@ -798,13 +1007,24 @@ function renderQueue() {
 	}
 	const queued = items.filter(i => i.status === 'queued' || i.status === 'paused');
 	const seconds = queued.reduce((t, i) => t + (i.end - i.start), 0);
-	$('totals-left').innerHTML = items.length ? `<b>${queued.length}</b> to do · ${clock(seconds)} of video` : 'No videos yet';
-	$('totals-right').innerHTML = queued.length ? `≈ <b>${human(queued.reduce((t, i) => t + i.estimate, 0))}</b>` : '';
+	const estimate = queued.reduce((t, i) => t + i.estimate, 0);
+	$('totals-left').textContent = items.length ? `${queued.length} to do · ${clock(seconds)} of video` : 'No videos yet';
+	$('totals-right').textContent = queued.length ? hm(estimate) : '–';
+	$('ready-at').textContent = queued.length ? `Ready around ${timeOfDay(Date.now() / 1000 + estimate)} if you start now. You can pause at any time.` : '';
+	$('recipe-eyebrow').textContent = `Recipe · ${items.length > 1 ? `all ${items.length} videos` : items.length ? 'your video' : 'all videos'}`;
+	if (!state.data || !state.data.running) $('upscale-sub').textContent = items.length ? `${items.length} video${items.length > 1 ? 's' : ''} · ${clock(items.reduce((t, i) => t + i.end - i.start, 0))} of video · pick one to trim or crop it, or just press Start` : 'Old home videos, sharp again';
 	const running = state.data && state.data.running, paused = state.data && state.data.paused;
 	const merging = state.data && state.data.batch && state.data.batch.merge && state.data.batch.merge.status === 'running';
 	$('start').hidden = running; $('stop').hidden = !running && !paused; $('pause').hidden = !running || merging;
+	// an empty list shows only the big welcome card; Clear finished only when there is something to clear
+	$('tray-wrap').hidden = !items.length;
+	$('clear-finished').hidden = !items.some(i => ['done', 'error', 'cancelled'].includes(i.status));
+	$('estimate').hidden = running || paused || !queued.length;
+	$('merge').closest('.merge-switch').hidden = !items.length;
+	$('merge-name').hidden = !items.length || !$('merge').checked;
+	$('side-panel').classList.toggle('busy', !!(running || paused));
 	$('start').disabled = !queued.length && !paused;
-	$('start').textContent = paused ? 'Resume queue' : queued.length > 1 ? `Start queue · ${queued.length} videos` : queued.length === 1 ? 'Start · 1 video' : 'Nothing to do';
+	$('start').innerHTML = ICON.playBig + (paused ? 'Resume' : queued.length > 1 ? `Start upscaling · ${queued.length} videos` : queued.length === 1 ? 'Start upscaling' : 'Nothing to upscale');
 }
 $('queue').addEventListener('click', async (event) => {
 	const li = event.target.closest('.q-item'); if (!li) return;
@@ -834,8 +1054,8 @@ function reportAdded(result) {
 	toast(`${added ? `Added ${added} video${added > 1 ? 's' : ''}` : 'Nothing added'}${skipped ? ` · skipped ${skipped} (${result.skipped.slice(0, 2).map(s => s.path.split(/[\\/]/).pop() + ': ' + s.reason).join(', ')}${skipped > 2 ? '…' : ''})` : ''}`);
 	if (added && !state.selected) state.selected = result.added[0];
 }
-$('add-files').onclick = () => addViaPicker('files');
-$('add-folder').onclick = () => addViaPicker('folder');
+$('add-files').onclick = $('empty-add').onclick = $('dropzone').onclick = () => addViaPicker('files');
+$('add-folder').onclick = $('empty-folder').onclick = () => addViaPicker('folder');
 
 const VIDEO_EXT = /\.(avi|mov|mp4|m4v|mkv|mpg|mpeg|wmv|3gp|mts|m2ts|vob|dv|flv|webm)$/i;
 async function collectEntries(entry, prefix, out) {
@@ -889,7 +1109,7 @@ window.addEventListener('drop', async (e) => {
 			paths.push(result.path);
 		} catch (error) { toast(`${path}: ${error.message}`); }
 	}
-	try { reportAdded(await api('/api/queue/add', { paths })); await refresh(); } catch (error) { toast(error.message); }
+	try { reportAdded(await api('/api/queue/add', { paths })); await refresh(); if (state.tab === 'library') showTab('upscale'); } catch (error) { toast(error.message); }
 });
 
 $('clear-finished').onclick = async () => { await api('/api/queue/clear', { which: 'finished' }); refresh(); };
@@ -906,7 +1126,7 @@ $('start').onclick = async () => {
 	} catch (error) { toast(error.message); }
 };
 $('stop').onclick = async () => {
-	if (!confirm(state.data && state.data.paused ? 'Stop the queue? The paused video is cancelled; the others stay queued.' : 'Stop the queue? The video that is being processed is cancelled; the others stay queued.')) return;
+	if (!confirm(state.data && state.data.paused ? 'Stop the list? The paused video is cancelled; the others stay in the row.' : 'Stop the list? The video that is being made is cancelled; the others stay in the row.')) return;
 	await api('/api/stop', {}); refresh();
 };
 // pause: the video being made is stopped so the GPU is free; resuming redoes only the step or part that was in progress
@@ -996,6 +1216,29 @@ function renderPreviewWait(item) {
 	$('preview-wait-note').textContent = 'Browsers cannot play this video format. The copy is made once; this video opens at once from now on.';
 }
 $('editor-reveal').onclick = () => { const item = selected(); if (item) api('/api/reveal', { path: item.path }); };
+
+// transport under the video: play, the counter, sound and full screen (the strip of frames is the timeline below)
+function renderTransport() {
+	$('u-play').innerHTML = player.paused ? ICON.playBig : ICON.pause;
+	$('u-play').setAttribute('aria-label', player.paused ? 'Play' : 'Pause');
+	$('u-time').innerHTML = `${clock(player.currentTime || 0, 2)} <small>/ ${clock(selected()?.duration ?? 0, 2)}</small>`;
+	$('u-mute').innerHTML = player.muted ? ICON.muted : ICON.sound;
+}
+$('u-play').onclick = () => { player.paused ? player.play() : player.pause(); };
+player.addEventListener('click', () => { if (!state.cropEditing) player.paused ? player.play() : player.pause(); });
+$('u-mute').onclick = () => { player.muted = !player.muted; renderTransport(); };
+$('u-full').onclick = () => player.requestFullscreen?.().catch(() => {});
+for (const name of ['play', 'pause', 'timeupdate', 'loadedmetadata', 'emptied']) player.addEventListener(name, renderTransport);
+renderTransport();
+
+// Section, Crop and Brightness: one at a time under the video
+function showTool(tool) {
+	for (const b of document.querySelectorAll('#tool-tabs button')) { b.classList.toggle('active', b.dataset.tool === tool); b.setAttribute('aria-selected', String(b.dataset.tool === tool)); }
+	for (const row of document.querySelectorAll('.tool-row')) row.classList.toggle('active', row.dataset.tool === tool);
+	if (tool !== 'brightness' && compare.on) setCompare(false);
+	if (tool !== 'crop' && state.cropEditing) { state.cropEditing = false; renderCrop(); }
+}
+$('tool-tabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tool]'); if (b) showTool(b.dataset.tool); });
 $('editor-edit').onclick = () => { const item = selected(); if (item) editorLoaded() ? edOpenVideo(item.path) : showTab('edit'); };
 
 // section and crop changes of the selected video, sent together a moment after the last one
@@ -1031,6 +1274,7 @@ function renderSection() {
 	if (document.activeElement !== $('end-text')) $('end-text').value = clock(state.end, 1);
 	const length = state.end - state.start;
 	$('sel-length').textContent = `${clock(length, 1)} · ${Math.round(length * item.fps)} frames`;
+	$('tool-section-state').textContent = length < item.duration - 0.05 ? `${clock(state.start)}–${clock(state.end)}` : 'whole';
 }
 function commitSection() {
 	const item = selected(); if (!item) return;
@@ -1126,6 +1370,7 @@ function renderCrop() {
 		}
 		$('crop-info').textContent = text;
 	}
+	$('tool-crop-state').textContent = mode === 'custom' && even ? `${even.w}×${even.h}` : mode === 'auto' ? 'auto' : 'none';
 	$('crop-edit').classList.toggle('on', state.cropEditing);
 	$('crop-edit').textContent = state.cropEditing ? 'Done' : 'Draw on video';
 	cropLayer.classList.toggle('editing', state.cropEditing);
@@ -1202,6 +1447,7 @@ function setCompare(on) {
 	$('bright-compare').textContent = compare.on ? 'Close comparison' : 'Compare on this frame';
 	clearTimeout(compare.timer);
 	if (!compare.on) { compare.key = null; compareLayer.hidden = true; $('bright-info').textContent = 'same setting for all videos'; return; }
+	showTool('brightness');
 	player.pause();
 	loadCompareFrame();
 }
@@ -1265,7 +1511,9 @@ $('bright-compare').onclick = () => setCompare(!compare.on);
 $('bright-gamma').addEventListener('input', () => { $('gamma').value = $('bright-gamma').value; scheduleSave(); drawCompare(); });
 $('gamma').addEventListener('input', () => { $('bright-gamma').value = $('gamma').value; drawCompare(); });
 $('gamma-compare').onclick = () => {
-	if (!selected()) { toast('Add a video to the queue first'); return; }
+	if (!selected()) { toast('Add a video first'); return; }
+	$('settings-dialog').close();
+	showTab('upscale');
 	setCompare(true);
 	$('player-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
@@ -1324,7 +1572,69 @@ function labelSliders() {
 	$('gamma-value').textContent = '· ' + ($('bright-value').textContent = g === 1 ? 'unchanged' : g > 1 ? `brighter (${g.toFixed(2)})` : `darker (${g.toFixed(2)})`);
 	$('identity-value').textContent = `· ${i.toFixed(2)}, ${i < 0.48 ? 'closer to the video' : i > 0.52 ? 'past the photos' : 'like the photos'}`;
 	$('enhance-value').textContent = `· ${$('enhance').value}%`;
+	$('tool-bright-state').textContent = g === 1 ? 'as is' : g.toFixed(2);
+	renderRecipe();
 }
+
+// ---------------------------------------------------------------- the recipe: the main settings as one sentence
+// every value opens a small menu that sets the same controls as All settings
+const SIZE_LABEL = { original: 'Full quality', near: 'Near lossless', balanced: 'Balanced', small: 'Small' };
+const tok = (key, text, kind = '') => `<button class="tok ${kind}" data-key="${key}" aria-haspopup="listbox">${esc(text)}</button>`;
+function renderRecipe() {
+	const person = $('person').value, photos = state.data?.people.find(p => p.name === person)?.photos;
+	const preset = $('fps-preset').value, fps = targetFps(), size = segValue('size') || 'original';
+	const fpsText = preset === '' ? 'the original frame rate' : fps ? `${+fps.toFixed(3)} fps` : 'a custom frame rate';
+	const output = size === 'original' ? 'full quality' : `${FORMAT_LABEL[$('format').value]}, ${SIZE_LABEL[size].toLowerCase()}`;
+	$('recipe').innerHTML = `Make each video ${tok('height', (segValue('height') || '1080') + 'p')} at ${tok('fps', fpsText)} with ${tok('motion', segValue('motion') === 'fast' ? 'fast' : 'best')} motion, `
+		+ (person ? `keep ${tok('person', person, 'person')}’s face true to ${photos ? photos + ' photos' : 'the photos'}, ` : `${tok('person', 'no face lock', 'off')}, `)
+		+ `and save it as ${tok('output', output)}.`;
+}
+const RECIPE_CHOICES = {
+	height: () => [ { title: 'Resolution' }, ...[ [ '720', 'fastest' ], [ '1080', 'recommended' ], [ '1440', 'largest files' ] ].map(([ v, note ]) => ({ label: v + 'p', note, on: segValue('height') === v, pick: () => setSeg('height', v) })) ],
+	fps: () => [ { title: 'Frame rate' }, ...[ ...$('fps-preset').options ].map(o => ({ label: o.value === 'custom' ? 'Other…' : o.text, note: o.value === '' ? 'as filmed' : o.value === '50' || o.value === '60' ? 'smoothest' : '', disabled: o.disabled, on: $('fps-preset').value === o.value,
+		pick: () => { if (o.value === 'custom') { openSettings('fps-custom'); return false; } $('fps-preset').value = o.value; $('fps-custom').hidden = true; } })) ],
+	motion: () => [ { title: 'Motion quality' }, { label: 'Best', note: 'in-between frames first', on: segValue('motion') !== 'fast', pick: () => setSeg('motion', 'best') }, { label: 'Fast', note: 'about 2.5× quicker', on: segValue('motion') === 'fast', pick: () => setSeg('motion', 'fast') } ],
+	person: () => [ { title: 'Face lock' }, ...[ ...$('person').options ].map(o => ({ label: o.value ? o.value : 'No face lock', note: o.value ? (state.data?.people.find(p => p.name === o.value)?.photos || '') + ' photos' : 'upscale only', on: $('person').value === o.value, pick: () => { $('person').value = o.value; } })),
+		{ label: 'Identity strength…', note: 'All settings', pick: () => { openSettings('identity'); return false; } } ],
+	output: () => [ { title: 'File size' }, ...Object.keys(SIZE_LABEL).map(v => ({ label: SIZE_LABEL[v], note: v === 'original' ? 'largest, for editing' : expected(v, $('format').value) ? `about ${expected(v, $('format').value).reduction}% smaller` : '', on: (segValue('size') || 'original') === v, pick: () => setSeg('size', v) })),
+		...((segValue('size') || 'original') === 'original' ? [] : [ { title: 'Format' }, ...[ ...$('format').options ].map(o => ({ label: o.text.split(' – ')[0], note: o.text.split(' – ')[1] || '', on: $('format').value === o.value, pick: () => { $('format').value = o.value; } })) ]) ]
+};
+function openPop(anchor, choices) {
+	const pop = $('pop');
+	pop.innerHTML = '';
+	for (const c of choices) {
+		if (c.title) { pop.insertAdjacentHTML('beforeend', `<h4>${esc(c.title)}</h4>`); continue; }
+		const b = document.createElement('button');
+		b.type = 'button'; b.className = c.on ? 'on' : ''; b.disabled = !!c.disabled; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(!!c.on));
+		b.innerHTML = `<span class="mark">${c.on ? '✓' : ''}</span>${esc(c.label)}${c.note ? `<small>${esc(c.note)}</small>` : ''}`;
+		b.onclick = () => { closePop(); if (c.pick() !== false) scheduleSave(); };
+		pop.append(b);
+	}
+	pop.hidden = false;
+	const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+	pop.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+	pop.style.top = (r.bottom + 8 + h > innerHeight ? Math.max(8, r.top - h - 8) : r.bottom + 8) + 'px';
+	(pop.querySelector('button.on') || pop.querySelector('button:not(:disabled)'))?.focus({ preventScroll: true });
+	pop.anchor = anchor;
+}
+function closePop() { $('pop').hidden = true; }
+$('recipe').addEventListener('click', (e) => { const b = e.target.closest('.tok'); if (b) { e.stopPropagation(); openPop(b, RECIPE_CHOICES[b.dataset.key]()); } });
+document.addEventListener('click', (e) => { if (!$('pop').hidden && !e.target.closest('#pop')) closePop(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('pop').hidden) { closePop(); e.stopPropagation(); } }, true);
+window.addEventListener('resize', closePop);
+// only a scroll that moves the value away closes the menu (not the strip of frames or the row of videos)
+window.addEventListener('scroll', (e) => { if (!$('pop').hidden && (e.target === document || e.target.contains?.($('pop').anchor))) closePop(); }, true);
+function openSettings(focusId) {
+	closePop();
+	$('settings-dialog').showModal();
+	if (focusId) {
+		if (focusId === 'fps-custom') { $('fps-preset').value = 'custom'; $('fps-custom').hidden = false; }
+		$(focusId).focus();
+	}
+}
+$('all-settings').onclick = () => openSettings();
+$('settings-close').onclick = $('settings-done').onclick = () => $('settings-dialog').close();
+$('settings-dialog').addEventListener('click', (e) => { if (e.target === $('settings-dialog')) $('settings-dialog').close(); });
 let saveTimer;
 function scheduleSave() { labelSliders(); clearTimeout(saveTimer); saveTimer = setTimeout(saveSettingsNow, 350); }
 async function saveSettingsNow() { clearTimeout(saveTimer); try { await api('/api/settings', collectSettings()); } catch (error) { toast(error.message); } }
@@ -1343,21 +1653,27 @@ function renderProgress(data) {
 	const merging = b.merge && b.merge.status === 'running', active = b.running || b.paused;
 	if (b.paused) {
 		$('progress-title').textContent = `Paused · video ${b.index} of ${b.total}`;
-		$('progress-sub').textContent = 'the GPU is free · Resume continues where it stopped';
+		$('progress-sub').textContent = 'GPU free';
 	} else if (b.running) {
-		$('progress-title').textContent = merging ? 'Merging all videos' : `Processing video ${b.index} of ${b.total}`;
+		$('progress-title').textContent = merging ? 'Joining all videos' : `Upscaling video ${b.index} of ${b.total}`;
 		$('progress-sub').textContent = `${b.done} done${b.failed ? ` · ${b.failed} failed` : ''}`;
 	} else {
-		$('progress-title').textContent = b.stopped ? 'Queue stopped' : b.failed ? 'Queue finished with problems' : 'Queue finished';
-		$('progress-sub').textContent = `${b.done} done${b.failed ? ` · ${b.failed} failed` : ''} · took ${human(b.elapsed)}`;
+		$('progress-title').textContent = b.stopped ? 'Stopped' : b.failed ? 'Finished with problems' : 'All done';
+		$('progress-sub').textContent = `${b.done} done${b.failed ? ` · ${b.failed} failed` : ''}`;
 	}
 	const bar = $('batch-bar');
 	bar.className = 'bar' + (b.paused ? ' paused' : !b.running ? (b.failed || b.stopped ? ' bad' : ' good') : '');
 	bar.firstElementChild.style.width = (active ? b.percent : 100) + '%';
-	$('stat-percent').textContent = active ? b.percent.toFixed(1) + '%' : '100%';
-	$('stat-elapsed').textContent = clock(b.running ? b.elapsed + (t - state.dataTime) : b.elapsed);
-	$('stat-left').textContent = b.running ? clock(Math.max(b.remaining - (t - state.dataTime), 0)) : b.paused ? clock(b.remaining) : '–';
-	$('stat-eta').textContent = b.running && b.eta ? timeOfDay(b.eta) : b.paused ? 'paused' : b.finished ? 'done ' + timeOfDay(b.finished) : '–';
+	$('stat-percent').textContent = (active || b.stopped || b.failed ? Math.floor(b.percent) : 100) + '%';
+	const line = card.querySelector('.left-line');
+	if (active !== (line.dataset.mode === 'active')) {
+		line.dataset.mode = active ? 'active' : 'finished';
+		line.innerHTML = active ? '<b id="stat-left">–</b> left · ready <span id="stat-eta">–</span> · <span id="stat-elapsed">–</span> so far'
+			: 'Finished <span id="stat-eta">–</span> · took <b id="stat-elapsed">–</b><span id="stat-left" hidden></span>';
+	}
+	$('stat-elapsed').textContent = hm(b.running ? b.elapsed + (t - state.dataTime) : b.elapsed);
+	$('stat-left').textContent = b.running ? hm(Math.max(b.remaining - (t - state.dataTime), 0)) : b.paused ? hm(b.remaining) : '–';
+	$('stat-eta').textContent = b.running && b.eta ? timeOfDay(b.eta) : b.paused ? 'after Resume' : b.finished ? timeOfDay(b.finished) : '–';
 	$('progress-pause').hidden = !(b.running && !merging) && !b.paused;
 	$('progress-pause').textContent = b.paused ? 'Resume' : 'Pause';
 	const current = data.items.find(i => i.id === b.current);
@@ -1368,13 +1684,14 @@ function renderProgress(data) {
 		$('current-phase').textContent = `${b.paused ? 'Paused at step' : 'Step'} ${job.phase_index || 1} of ${job.phase_count || '…'} · ${job.phase_label || 'Starting'}${job.detail ? ' — ' + job.detail : ''}`;
 		$('current-bar').style.width = (job.phase_percent || 0) + '%';
 	}
-	const icons = { done: '✓ ', cached: '↺ ', skipped: '– ', running: '● ', pending: '' };
-	$('steps').innerHTML = current && job && job.phases ? job.phases.map(p => `<div class="step ${p.state}">${icons[p.state] || ''}${esc(p.label)}${p.state === 'cached' ? '<br><span class="muted">reused</span>' : p.state === 'skipped' ? '<br><span class="muted">not needed</span>' : ''}</div>`).join('') : '';
+	const note = (p) => p.state === 'running' ? (b.paused ? 'paused' : Math.floor(job.phase_percent || 0) + '%') : p.state === 'cached' ? 'reused' : p.state === 'skipped' ? 'not needed' : p.state === 'done' ? 'done' : '';
+	const steps = current && job && job.phases ? job.phases.map(p => `<li class="step ${p.state}">${esc(p.label)}<small>${note(p)}</small></li>`).join('') : '';
+	if ($('steps').dataset.html !== steps) { $('steps').innerHTML = steps; $('steps').dataset.html = steps; }
 	$('steps').hidden = !current;
 	const m = b.merge;
 	$('merge-row').hidden = !m;
 	if (m) {
-		$('merge-name-label').textContent = 'Merged video · ' + m.output.split(/[\\/]/).pop();
+		$('merge-name-label').textContent = 'Joined video · ' + m.output.split(/[\\/]/).pop();
 		$('merge-detail').textContent = m.status === 'running' ? `Joining ${m.parts} videos — ${m.detail}` : m.status === 'done' ? `Done · ${m.parts} videos` : m.status === 'error' ? 'Failed: ' + m.detail : 'Stopped';
 		$('merge-bar').style.width = (m.fraction * 100) + '%';
 	}
@@ -1394,25 +1711,119 @@ async function refreshLog() {
 }
 
 // ---------------------------------------------------------------- results and viewer
+// ---------------------------------------------------------------- Library: the finished videos
+// a grid by date with filters and search; the chosen video's details and actions on the right
+const KIND_LABEL = { upscaled: 'Upscaled', edited: 'Edited', merged: 'Joined', smaller: 'Smaller' };
+const FILTERS = [ [ 'all', 'All' ], [ 'upscaled', 'Upscaled' ], [ 'edited', 'Edited' ], [ 'merged', 'Joined' ], [ 'smaller', 'Smaller copies' ] ];
+const kindOf = (r) => r.shrink ? 'smaller' : r.merged ? 'merged' : r.edited ? 'edited' : 'upscaled';
+const bg = (path) => path ? `background-image:url(&quot;${media(path)}&quot;)` : '';
+const lib = { filter: 'all', query: '', selected: null, info: {}, tries: 0, paths: '' };
+function libGroup(time) {
+	const d = new Date(time * 1000), today = new Date().setHours(0, 0, 0, 0);
+	const days = Math.round((today - new Date(time * 1000).setHours(0, 0, 0, 0)) / 864e5);
+	if (days <= 0) return 'Today';
+	if (days === 1) return 'Yesterday';
+	if (days < 7) return 'This week';
+	return d.getFullYear() === new Date().getFullYear() ? d.toLocaleDateString([], { month: 'long' }) : String(d.getFullYear());
+}
+// thumbnails, length and size of the results come from the Edit tab's library (made in the background)
+async function loadLibInfo() {
+	clearTimeout(lib.timer);
+	try {
+		const { results } = await api('/api/edit/library', {});
+		lib.info = Object.fromEntries(results.map(r => [ r.path, r ]));
+		if (state.data) renderResults(state.data.results);
+		if (state.tab === 'library' && results.some(r => !r.thumb || r.duration == null) && ++lib.tries < 30) lib.timer = setTimeout(loadLibInfo, 2000);
+	} catch {}
+}
 function renderResults(results) {
-	const box = $('results');
-	const key = JSON.stringify(results);
+	const paths = results.map(r => r.video).join('\n');
+	if (paths !== lib.paths) { lib.paths = paths; lib.tries = 0; if (state.tab === 'library') loadLibInfo(); }
+	const box = $('results'), key = JSON.stringify([ results, lib.filter, lib.query, lib.selected, lib.shrinkQ, lib.shrinkF, Object.values(lib.info).map(i => [ i.thumb, i.duration ]) ]);
 	if (box.dataset.key === key) return;
 	box.dataset.key = key;
-	if (!results.length) { box.innerHTML = '<span class="muted small">Finished videos appear here.</span>'; return; }
-	box.innerHTML = results.map((r, i) => `<div class="result${r.merged ? ' merged' : ''}${r.edited ? ' edited' : ''}" data-i="${i}">
-		<div style="min-width:0"><div class="name">${r.merged ? '<span class="chip running" style="margin-right:6px">Merged</span>' : ''}${r.edited ? '<span class="chip done" style="margin-right:6px" title="Made in the Edit tab">Edited</span>' : ''}${r.shrink ? `<span class="badge" style="margin-right:6px">${esc(FORMAT_LABEL[r.shrink.format] || r.shrink.format)} · ${esc(QUALITY_LABEL[r.shrink.quality] || r.shrink.quality)}</span>` : ''}${esc(r.name)}</div>
-		<div class="sub num">${new Date(r.time * 1000).toLocaleString()} · <b style="color:var(--text);font-weight:600">${mb(r.size)}</b>${sizeLine(r)}</div></div>
-		<div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-act="play">${ICON.play} Play</button><button class="btn sm quiet" data-act="edit" title="Open in the Edit tab: trim, join, speed up">Edit</button>${r.shrink ? '' : '<button class="btn sm quiet" data-act="shrink" title="Make a smaller copy for sharing">Smaller…</button>'}<button class="btn sm quiet" data-act="reveal">Show</button></div></div>`).join('');
-	box.onclick = (e) => {
-		const row = e.target.closest('.result'), act = e.target.closest('[data-act]')?.dataset.act; if (!row || !act) return;
-		const r = results[+row.dataset.i];
-		if (act === 'play') openViewer(r.name, r.video, r.compare);
-		else if (act === 'edit') editorLoaded() ? edOpenVideo(r.video) : showTab('edit');
-		else if (act === 'shrink') openShrink([ r.video ]);
-		else api('/api/reveal', { path: r.video });
-	};
+	const total = results.reduce((t, r) => t + (r.size || 0), 0);
+	$('lib-sub').textContent = results.length ? `${results.length} finished video${results.length === 1 ? '' : 's'} · ${mb(total)}` : 'Your finished videos';
+	const counts = { all: results.length };
+	for (const r of results) counts[kindOf(r)] = (counts[kindOf(r)] || 0) + 1;
+	$('lib-filters').innerHTML = results.length ? FILTERS.filter(([ k ]) => counts[k] || k === 'all' || k === lib.filter)
+		.map(([ k, label ]) => `<button data-filter="${k}" class="${k === lib.filter ? 'active' : ''}" aria-pressed="${k === lib.filter}">${label}<small>${counts[k] || 0}</small></button>`).join('') : '';
+	const query = lib.query.trim().toLowerCase();
+	const shown = results.map((r, i) => ({ r, i })).filter(({ r }) => (lib.filter === 'all' || kindOf(r) === lib.filter) && (!query || r.name.toLowerCase().includes(query)));
+	if (!shown.some(({ r }) => r.video === lib.selected)) lib.selected = shown[0]?.r.video || null;
+	if (!results.length) box.innerHTML = `<div class="lib-none">Finished videos appear here.<br><button class="btn sm" data-go="upscale" style="margin-top:14px">Go to Upscale</button></div>`;
+	else if (!shown.length) box.innerHTML = '<div class="lib-none">Nothing matches.</div>';
+	else {
+		const groups = [];
+		for (const item of shown) { const g = libGroup(item.r.time); if (groups.at(-1)?.title !== g) groups.push({ title: g, items: [] }); groups.at(-1).items.push(item); }
+		box.innerHTML = groups.map(g => `<div class="lib-group"><h2 class="eyebrow">${esc(g.title)}</h2><div class="lib-grid">${g.items.map(({ r, i }) => {
+			const info = lib.info[r.video] || {}, kind = kindOf(r);
+			const meta = [ info.width ? `${info.width}×${info.height}` : '', mb(r.size) ].filter(Boolean).join(' · ');
+			return `<button class="card-v${r.video === lib.selected ? ' selected' : ''}" data-i="${i}" title="${esc(r.name)}"><span class="thumb" style="${bg(info.thumb)}"><span class="kind ${kind}"><i></i>${KIND_LABEL[kind]}</span>${info.duration ? `<span class="len">${clock(info.duration)}</span>` : ''}</span><span class="name">${esc(r.name)}</span><span class="meta">${meta}</span></button>`;
+		}).join('')}</div></div>`).join('');
+	}
+	renderLibDetail(results.find(r => r.video === lib.selected));
 }
+function renderLibDetail(r) {
+	const box = $('lib-detail');
+	box.hidden = !r;
+	if (!r) { box.innerHTML = ''; return; }
+	const info = lib.info[r.video] || {}, kind = kindOf(r), s = r.shrink;
+	const chips = [ `<span class="chip ${kind === 'upscaled' ? 'running' : kind === 'edited' ? 'done' : ''}">${KIND_LABEL[kind]}</span>` ];
+	if (s) chips.push(`<span class="chip">${esc(FORMAT_LABEL[s.format] || s.format)} · ${esc(QUALITY_LABEL[s.quality] || s.quality)}</span>`, `<span class="chip done">${esc(s.label)}</span>`);
+	const facts = [ [ 'Made', new Date(r.time * 1000).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) ] ];
+	if (info.width) facts.push([ 'Picture', `${info.width}×${info.height}${info.duration ? ' · ' + clock(info.duration) : ''}` ]);
+	facts.push([ 'File', `${esc(r.video.split(/[\\/]/).pop())} · ${mb(r.size)}` ]);
+	if (s) facts.push(s.vmaf != null ? [ 'Smaller', `<b style="color:var(--aqua)">${s.reduction}% smaller</b> than ${mb(s.source_size)}` ] : [ 'Smaller', `≈ ${s.expected_reduction}% smaller than full quality` ],
+		[ 'Quality', `${meter(s.vmaf ?? s.expected_vmaf)} VMAF ${s.vmaf ?? s.expected_vmaf}` ]);
+	lib.shrinkQ ||= segValue('size') && segValue('size') !== 'original' ? segValue('size') : 'balanced';
+	lib.shrinkF ||= $('format').value || 'av1';
+	const e = expected(lib.shrinkQ, lib.shrinkF);
+	box.innerHTML = `<div class="preview" style="${bg(info.thumb)}"><button class="play-big" data-act="play" aria-label="Play">${ICON.playBig}</button></div>
+		<div><h2>${esc(r.name)}</h2><div class="chips">${chips.join('')}</div></div>
+		<dl class="facts">${facts.map(([ k, v ]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+		<div class="lib-actions">
+			<button class="btn primary" data-act="play">${ICON.playBig}Play</button>
+			<button class="btn" data-act="edit" title="Open in Edit: trim, join, speed up, add texts">Edit</button>
+			${r.compare ? '<button class="btn" data-act="compare" title="The original, upscaled and final video next to each other">Side by side</button>' : ''}
+			<button class="btn" data-act="reveal" title="Show the file in its folder">Show</button>
+		</div>
+		${s ? '' : `<div class="lib-shrink">
+			<div class="head"><b>Make a smaller copy</b><span>for sharing</span></div>
+			<div class="segmented" id="lib-shrink-q">${Object.keys(QUALITY_LABEL).map(q => `<button data-value="${q}" class="${q === lib.shrinkQ ? 'active' : ''}">${QUALITY_LABEL[q]}</button>`).join('')}</div>
+			<div class="go"><select class="input" id="lib-shrink-f" aria-label="Format">${[ ...$('format').options ].map(o => `<option value="${o.value}" title="${esc(o.text)}"${o.value === lib.shrinkF ? ' selected' : ''}>${FORMAT_LABEL[o.value]}</option>`).join('')}</select>
+				<span class="est" title="${e ? `about ${e.reduction}% smaller · VMAF ${e.vmaf}` : ''}">${e ? '≈ ' + mb(r.size * (1 - e.reduction / 100)) : ''}</span><button class="btn sm" data-act="shrink">Make copy</button></div>
+			<button class="link" data-act="shrink-more">Several videos at once…</button>
+		</div>`}`;
+}
+$('results').addEventListener('click', (e) => {
+	if (e.target.closest('[data-go]')) { showTab('upscale'); return; }
+	const card = e.target.closest('.card-v'); if (!card) return;
+	lib.selected = state.data.results[+card.dataset.i].video;
+	renderResults(state.data.results);
+});
+$('results').addEventListener('dblclick', (e) => { const card = e.target.closest('.card-v'); if (card) { const r = state.data.results[+card.dataset.i]; openViewer(r.name, r.video, r.compare); } });
+$('lib-filters').addEventListener('click', (e) => { const b = e.target.closest('[data-filter]'); if (b) { lib.filter = b.dataset.filter; renderResults(state.data.results); } });
+$('lib-search').addEventListener('input', () => { lib.query = $('lib-search').value; renderResults(state.data.results); });
+$('lib-detail').addEventListener('click', async (e) => {
+	const r = state.data.results.find(x => x.video === lib.selected); if (!r) return;
+	const q = e.target.closest('#lib-shrink-q button');
+	if (q) { lib.shrinkQ = q.dataset.value; renderResults(state.data.results); return; }
+	const act = e.target.closest('[data-act]')?.dataset.act;
+	if (act === 'play') openViewer(r.name, r.video, r.compare);
+	else if (act === 'compare') { openViewer(r.name, r.video, r.compare); document.querySelector('#viewer-tabs [data-tab="compare"]').click(); }
+	else if (act === 'edit') editorLoaded() ? edOpenVideo(r.video) : showTab('edit');
+	else if (act === 'reveal') api('/api/reveal', { path: r.video });
+	else if (act === 'shrink-more') openShrink([ r.video ]);
+	else if (act === 'shrink') {
+		try {
+			await api('/api/shrink', { paths: [ r.video ], quality: lib.shrinkQ, format: lib.shrinkF });
+			toast('Making a smaller copy — you see the progress at the top of the Library');
+			refresh();
+		} catch (error) { toast(error.message); }
+	}
+});
+$('lib-detail').addEventListener('change', (e) => { if (e.target.id === 'lib-shrink-f') { lib.shrinkF = e.target.value; renderResults(state.data.results); } });
 const QUALITY_LABEL = { near: 'Near lossless', balanced: 'Balanced', small: 'Small' };
 const FORMAT_LABEL = { av1: 'AV1', h265: 'H.265', h264: 'H.264' };
 const mb = (bytes) => bytes >= 1e9 ? (bytes / 1e9).toFixed(2) + ' GB' : (bytes / 1e6).toFixed(bytes < 1e7 ? 2 : 1) + ' MB';
@@ -1489,7 +1900,7 @@ $('shrink-start').onclick = async () => {
 	try {
 		const { added } = await api('/api/shrink', { paths: shrinkState.paths, quality: segValue('shrink-quality'), format: $('shrink-format').value });
 		$('shrink-dialog').close();
-		toast(`Making ${added} video${added === 1 ? '' : 's'} smaller — progress is shown under Results`);
+		toast(`Making ${added} video${added === 1 ? '' : 's'} smaller — you see the progress at the top of the Library`);
 		refresh();
 	} catch (error) { toast(error.message); }
 };
@@ -1515,12 +1926,17 @@ $('viewer').addEventListener('click', (e) => { if (e.target === $('viewer')) $('
 function renderTop(data) {
 	const b = data.batch, pill = $('top-status');
 	pill.className = 'status-pill' + (data.running ? ' running' : data.paused ? ' paused' : b && b.finished && !b.stopped ? ' done' : '');
+	const waiting = state.items.filter(i => i.status === 'queued').length;
 	$('top-status-text').textContent = data.running
-		? (b.merge && b.merge.status === 'running' ? 'Merging' : `Processing ${b.index} of ${b.total}`) + (b.eta ? ` · ready at ${timeOfDay(b.eta)}` : '')
-		: data.paused ? `Paused${b ? ` · video ${b.index} of ${b.total}` : ''} · GPU free`
-		: state.items.some(i => i.status === 'queued') ? `${state.items.filter(i => i.status === 'queued').length} queued` : 'Idle';
-	$('settings-note').textContent = data.running ? 'Changes apply to videos that haven\'t started yet'
-		: data.paused ? 'Changes apply when you resume; the steps they affect are done again' : 'Applies to every video in the queue';
+		? (b.merge && b.merge.status === 'running' ? 'Joining' : `Upscaling ${b.index} of ${b.total}`) + (b.eta ? ` · ready ${timeOfDay(b.eta)}` : '')
+		: data.paused ? `Paused${b ? ` · ${b.index} of ${b.total}` : ''} · GPU free`
+		: waiting ? `${waiting} waiting` : 'Nothing running';
+	$('settings-note').textContent = data.running ? 'Changes apply to the videos that haven’t started yet'
+		: data.paused ? 'Changes apply when you resume; the steps they affect are done again' : 'The same for every video';
+	// the Upscale icon in the rail shows the progress from the other screens
+	const busy = !!(data.running || data.paused) && !!b;
+	$('rail-upscale').classList.toggle('busy', busy);
+	$('rail-pct').textContent = busy ? Math.floor(b.percent) + '%' : '';
 }
 let first = true;
 async function refresh() {
@@ -1549,7 +1965,7 @@ async function refresh() {
 		if (editorLoaded()) edOnState(data);
 		refreshLog();
 	} catch (error) {
-		$('top-status-text').textContent = 'No connection — is the upscaler window still open?';
+		$('top-status-text').textContent = 'No connection — is the Kinora window still open?';
 	}
 }
 // ---------------------------------------------------------------- tabs (the Edit tab itself is ui/editor.js)
@@ -1557,14 +1973,16 @@ async function refresh() {
 const editorLoaded = () => typeof edTabShown === 'function';
 function showTab(tab) {
 	if (tab === 'edit' && !editorLoaded()) $('update-banner').hidden = false;
-	if (tab !== 'edit' || !editorLoaded()) tab = 'upscale';
+	if (tab !== 'library' && (tab !== 'edit' || !editorLoaded())) tab = 'upscale';
 	state.tab = tab;
 	for (const b of document.querySelectorAll('#tabs button')) { b.classList.toggle('active', b.dataset.tab === tab); b.setAttribute('aria-selected', String(b.dataset.tab === tab)); }
 	$('upscale-tab').hidden = tab !== 'upscale';
+	$('library-tab').hidden = tab !== 'library';
 	$('edit-tab').hidden = tab !== 'edit';
 	try { localStorage.setItem('tab', tab); } catch {}
 	if (location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
-	if (tab === 'edit') player.pause();
+	if (tab !== 'upscale') { player.pause(); closePop(); }
+	if (tab === 'library') { lib.tries = 0; loadLibInfo(); }
 	if (editorLoaded()) edTabShown(tab);
 }
 $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });

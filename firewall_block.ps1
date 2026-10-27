@@ -5,11 +5,11 @@
 #   powershell -ExecutionPolicy Bypass -File firewall_block.ps1
 #
 # Temporarily allow again (e.g. to download another model):
-#   Disable-NetFirewallRule -DisplayName 'video-upscaler*'
+#   Disable-NetFirewallRule -DisplayName 'kinora*'
 #   ...download...
-#   Enable-NetFirewallRule -DisplayName 'video-upscaler*'
+#   Enable-NetFirewallRule -DisplayName 'kinora*'
 # Remove completely:
-#   Remove-NetFirewallRule -DisplayName 'video-upscaler*'
+#   Remove-NetFirewallRule -DisplayName 'kinora*'
 
 $root = $PSScriptRoot
 $folders = @(Get-ChildItem "$root\tools\python" -Directory | ForEach-Object { $_.FullName }) + @("$root\tools\seedvr2\.venv\Scripts", "$root\tools\facefusion\.venv\Scripts")
@@ -20,8 +20,9 @@ foreach ($folder in $folders) {
 	foreach ($exe in 'python.exe', 'pythonw.exe', 'rife-ncnn-vulkan.exe') {
 		$program = Join-Path $folder $exe
 		if (Test-Path $program) {
-			$name = 'video-upscaler block ' + $program.Substring($root.Length + 1)
-			Get-NetFirewallRule -DisplayName $name -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+			$name = 'kinora block ' + $program.Substring($root.Length + 1)
+			# also the rule from before the rename (video-upscaler), so a program never has two
+			Get-NetFirewallRule -DisplayName $name, ('video-upscaler block ' + $program.Substring($root.Length + 1)) -ErrorAction SilentlyContinue | Remove-NetFirewallRule
 			New-NetFirewallRule -DisplayName $name -Direction Outbound -Program $program -Action Block -Profile Any | Out-Null
 			Write-Host "blocked: $program"
 		}
