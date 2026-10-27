@@ -1,0 +1,1584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video Upscaler</title>
+<style>
+:root {
+	--bg: #f4f5f7; --surface: #ffffff; --surface-2: #f8f9fb; --surface-3: #eef0f4;
+	--border: #e3e6eb; --border-strong: #d0d5dd;
+	--text: #1c2230; --muted: #626b7a; --faint: #98a1b0;
+	--accent: #4a63d8; --accent-strong: #3a52c4; --accent-soft: #eef1fc; --accent-line: #c9d2f5;
+	--good: #1d7a55; --good-soft: #e8f5ee; --bad: #c2413b; --bad-soft: #fcecea; --warm: #a8661a; --warm-soft: #fbf2e4;
+	--crop: #f2c94c;
+	--shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 2px 6px rgba(16, 24, 40, .04);
+	--radius: 12px;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #0f1116; --surface: #171a21; --surface-2: #1c2028; --surface-3: #232833;
+		--border: #2a303b; --border-strong: #3a4250;
+		--text: #e6e8ee; --muted: #a0a8b6; --faint: #6f7887;
+		--accent: #8098ff; --accent-strong: #97abff; --accent-soft: rgba(128, 152, 255, .13); --accent-line: rgba(128, 152, 255, .35);
+		--good: #4cc38a; --good-soft: rgba(76, 195, 138, .13); --bad: #f07a73; --bad-soft: rgba(240, 122, 115, .13); --warm: #e0a556; --warm-soft: rgba(224, 165, 86, .13);
+		--shadow: none;
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- top bar */
+.topbar { position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 10px 24px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.topbar-right { justify-self: end; display: flex; align-items: center; gap: 14px; min-width: 0; }
+/* while the Edit tab is open (body.tab-edit, set by ui/editor.js) the edit's name and Export take the brand's place */
+.topbar .ed-bar-left, .topbar .ed-bar-right { display: none; }
+body.tab-edit .topbar .ed-bar-left, body.tab-edit .topbar .ed-bar-right { display: flex; }
+body.tab-edit .brand-text { display: none; }
+@media (max-width: 900px) { .topbar { grid-template-columns: minmax(0, 1fr) auto; } .topbar .tabs { grid-row: 2; grid-column: 1 / -1; justify-self: center; } }
+/* the two tabs: big, with what each one is for; the active one is filled */
+.tabs { display: flex; gap: 6px; padding: 5px; border-radius: 14px; background: var(--surface-3); border: 1px solid var(--border); }
+.tabs button { display: flex; align-items: center; gap: 12px; min-width: 200px; padding: 9px 22px 9px 16px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; text-align: left; transition: background .15s, color .15s; }
+.tabs button svg { flex: none; }
+.tabs button b { display: block; font-size: 16.5px; font-weight: 700; line-height: 1.2; }
+.tabs button small { display: block; font-size: 12px; line-height: 1.3; }
+.tabs button:hover:not(.active) { background: var(--surface); color: var(--text); }
+.tabs button.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 40%, transparent); }
+.tabs button.active small { color: rgba(255, 255, 255, .88); }
+/* short windows: a slimmer top bar (the tabs keep their big names), so the videos keep their room */
+@media (max-height: 820px) and (min-width: 761px) { .topbar { padding-top: 6px; padding-bottom: 6px; } .tabs { padding: 4px; } .tabs button { padding: 6px 18px 6px 14px; } .tabs button small { display: none; } }
+.update-banner { max-width: 2400px; margin: 16px 24px 0; padding: 12px 16px; border-radius: 10px; background: var(--warm-soft); border: 1px solid color-mix(in srgb, var(--warm) 40%, transparent); color: var(--text); font-size: 14px; }
+.update-banner b { color: var(--warm); }
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #8fd3c8)); display: grid; place-items: center; color: #fff; box-shadow: var(--shadow); }
+.brand h1 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+.brand p { margin: 0; font-size: 12px; color: var(--muted); }
+.status-pill { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; padding: 5px 12px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+.status-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.status-pill.running .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: pulse 1.6s ease-in-out infinite; }
+.status-pill.done .dot { background: var(--good); }
+.status-pill.paused .dot { background: var(--warm); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
+
+/* ---------- layout */
+.layout { display: grid; grid-template-columns: clamp(330px, 21vw, 440px) minmax(0, 1fr); gap: 20px; max-width: 2400px; margin: 0 auto; padding: 20px 24px 60px; align-items: start; }
+@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } .queue-panel { position: static !important; max-height: none !important; } }
+.workspace { display: grid; gap: 20px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 0; }
+.card-head h2 { font-size: 15px; font-weight: 650; margin: 0; display: flex; align-items: center; gap: 8px; letter-spacing: -.005em; }
+.card-body { padding: 14px 18px 18px; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 12.5px; }
+.count { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-3); border-radius: 99px; padding: 1px 8px; }
+
+/* ---------- controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; font-weight: 500; transition: background .15s, border-color .15s, color .15s; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--accent-line); background: var(--accent-soft); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn.block { width: 100%; padding: 10px 14px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.quiet:hover:not(:disabled) { background: var(--surface-3); border-color: transparent; color: var(--text); }
+.btn.danger { color: var(--bad); }
+.btn.danger:hover:not(:disabled) { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.btn.on { background: var(--crop); border-color: var(--crop); color: #1c2230; }
+.icon-btn { width: 28px; height: 28px; display: inline-grid; place-items: center; border-radius: 7px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.icon-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
+.icon-btn:disabled { opacity: .3; cursor: default; }
+.icon-btn.danger:hover { color: var(--bad); background: var(--bad-soft); }
+.input, select.input { width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); }
+.input:focus, select.input:focus { outline: 2px solid var(--accent-line); outline-offset: 0; border-color: var(--accent); }
+.input.time { width: 96px; font-variant-numeric: tabular-nums; }
+.segmented { display: inline-flex; padding: 3px; gap: 2px; border-radius: 9px; background: var(--surface-3); }
+.segmented button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 500; font-size: 13px; }
+.segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.field label.label, .label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.check { display: flex; gap: 9px; align-items: flex-start; cursor: pointer; }
+.check input { margin-top: 3px; accent-color: var(--accent); }
+.check small { display: block; color: var(--muted); font-size: 12px; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.switch { position: relative; flex: none; width: 36px; height: 20px; margin-top: 1px; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span { position: absolute; inset: 0; border-radius: 99px; background: var(--border-strong); transition: background .15s; }
+.switch span::after { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(16px); }
+.switch input:focus-visible + span { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
+.chip.running { background: var(--accent-soft); color: var(--accent); }
+.chip.done { background: var(--good-soft); color: var(--good); }
+.chip.error { background: var(--bad-soft); color: var(--bad); }
+.chip.cancelled, .chip.paused { background: var(--warm-soft); color: var(--warm); }
+.badge { display: inline-flex; font-size: 11.5px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+
+/* ---------- queue */
+.queue-panel { position: sticky; top: 76px; display: flex; flex-direction: column; max-height: calc(100vh - 96px); }
+.queue-actions { display: flex; gap: 6px; }
+.dropzone { margin: 14px 18px 0; padding: 18px; border: 1.5px dashed var(--border-strong); border-radius: 10px; text-align: center; color: var(--muted); background: var(--surface-2); transition: border-color .15s, background .15s; }
+.dropzone svg { color: var(--accent); margin-bottom: 4px; }
+.dropzone b { color: var(--text); font-weight: 600; display: block; }
+.dropzone.compact { padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.dropzone.compact svg { margin: 0; }
+.dropzone.compact b { display: inline; }
+.dropzone.compact .hint { display: none; }
+.queue { list-style: none; margin: 12px 0 0; padding: 0 10px; overflow-y: auto; flex: 1 1 auto; min-height: 60px; }
+.q-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; position: relative; }
+.q-item:hover { background: var(--surface-2); }
+.q-item.selected { background: var(--accent-soft); border-color: var(--accent-line); }
+.q-thumb { width: 64px; height: 44px; border-radius: 7px; background: var(--surface-3) center/cover no-repeat; position: relative; overflow: hidden; }
+.q-index { position: absolute; left: 4px; top: 3px; font-size: 10.5px; font-weight: 700; color: #fff; background: rgba(0, 0, 0, .45); border-radius: 4px; padding: 0 4px; }
+.q-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-badges { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.q-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.q-tools { display: flex; gap: 0; opacity: 0; transition: opacity .12s; }
+.q-item:hover .q-tools, .q-item.selected .q-tools { opacity: 1; }
+.q-bar { height: 3px; border-radius: 99px; background: var(--surface-3); margin-top: 6px; overflow: hidden; }
+.q-bar div { height: 100%; background: var(--accent); width: 0; transition: width .6s ease; }
+.q-empty { padding: 24px 12px; text-align: center; color: var(--faint); font-size: 13px; }
+.queue-links { display: flex; justify-content: space-between; padding: 6px 18px 0; }
+.link { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12.5px; padding: 4px 0; }
+.link:hover { color: var(--accent); text-decoration: underline; }
+.queue-foot { border-top: 1px solid var(--border); margin-top: 10px; padding: 14px 18px 18px; display: grid; gap: 12px; }
+.totals { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.totals b { color: var(--text); font-weight: 600; }
+
+/* ---------- progress */
+.progress-card { border-color: var(--accent-line); }
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.progress-top h2 { font-size: 15px; margin: 0; font-weight: 650; }
+.bar { height: 10px; border-radius: 99px; background: var(--surface-3); overflow: hidden; margin-top: 12px; }
+.bar > div { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #8fd3c8)); transition: width .6s ease; }
+.bar.thin { height: 4px; margin-top: 8px; }
+.bar.good > div { background: var(--good); }
+.bar.bad > div { background: var(--bad); }
+.bar.paused > div { background: var(--warm); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; }
+.stat small { display: block; color: var(--muted); font-size: 12px; }
+.stat b { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.current { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.current .q-thumb { width: 56px; height: 40px; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin-top: 12px; }
+.step { font-size: 11.5px; color: var(--faint); border-top: 3px solid var(--surface-3); padding-top: 5px; line-height: 1.3; }
+.step.done { color: var(--muted); border-color: var(--good); }
+.step.cached, .step.skipped { color: var(--muted); border-color: var(--border-strong); }
+.step.running { color: var(--text); font-weight: 600; border-color: var(--accent); }
+.progress-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+pre.log { margin: 12px 0 0; max-height: 260px; overflow: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font: 11.5px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.error-box { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); white-space: pre-wrap; font-size: 13px; }
+
+/* ---------- editor */
+.editor-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.editor-head h2 { font-size: 17px; margin: 0; font-weight: 650; word-break: break-all; letter-spacing: -.01em; }
+.editor-meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.player-box { position: relative; margin-top: 14px; }
+/* the player grows with the window: on a large screen most of the window's height (the page scrolls to the tools) */
+video { width: 100%; max-height: max(440px, calc(100vh - 330px)); background: #0b0d12; border-radius: 10px; display: block; }
+.preview-wait { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; border-radius: 10px; background: rgba(8, 10, 14, .78); color: #e6e8ee; text-align: center; padding: 20px; }
+.preview-wait > div { width: min(420px, 90%); }
+.preview-wait b { font-size: 15px; }
+.preview-wait small { display: block; margin-top: 10px; color: #a0a8b6; font-size: 12.5px; }
+.crop-layer { position: absolute; overflow: hidden; pointer-events: none; }
+.crop-layer.editing { pointer-events: auto; cursor: crosshair; outline: 2px dashed var(--crop); }
+.crop-rect { position: absolute; border: 2px solid var(--crop); box-shadow: 0 0 0 9999px rgba(8, 10, 14, .55); }
+.crop-layer.editing .crop-rect { cursor: move; }
+.crop-rect .h { position: absolute; width: 14px; height: 14px; background: var(--crop); border-radius: 3px; display: none; }
+.crop-layer.editing .crop-rect .h { display: block; }
+.crop-rect .nw { left: -8px; top: -8px; cursor: nwse-resize; }
+.crop-rect .ne { right: -8px; top: -8px; cursor: nesw-resize; }
+.crop-rect .sw { left: -8px; bottom: -8px; cursor: nesw-resize; }
+.crop-rect .se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+.compare-layer { position: absolute; overflow: hidden; cursor: ew-resize; touch-action: none; user-select: none; }
+.compare-layer canvas { display: block; width: 100%; height: 100%; }
+.compare-line { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3); pointer-events: none; }
+.compare-line span { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: #fff; color: #1c2230; display: grid; place-items: center; box-shadow: 0 1px 5px rgba(0, 0, 0, .45); }
+.compare-tag { position: absolute; top: 8px; padding: 2px 8px; border-radius: 6px; background: rgba(8, 10, 14, .62); color: #fff; font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap; }
+.compare-tag.left { left: 8px; }
+.compare-tag.right { right: 8px; }
+input[type=range].inline { width: 190px; }
+.timeline { position: relative; height: 54px; border-radius: 8px; margin-top: 10px; background: var(--surface-3) center/100% 100% no-repeat; cursor: pointer; user-select: none; touch-action: none; overflow: hidden; }
+.timeline .shade { position: absolute; top: 0; bottom: 0; background: rgba(8, 10, 14, .6); pointer-events: none; }
+.timeline .sel { position: absolute; top: 0; bottom: 0; border: 2px solid var(--accent); border-radius: 6px; pointer-events: none; }
+.timeline .handle { position: absolute; top: 0; bottom: 0; width: 12px; margin-left: -6px; background: var(--accent); border-radius: 4px; cursor: ew-resize; display: grid; place-items: center; }
+.timeline .handle::after { content: ''; width: 2px; height: 16px; background: rgba(255, 255, 255, .85); border-radius: 1px; }
+.timeline .playhead { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); pointer-events: none; }
+.tool-rows { display: grid; gap: 14px; margin-top: 16px; }
+.tool-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: center; }
+@media (max-width: 640px) { .tool-row { grid-template-columns: minmax(0, 1fr); } }
+.tool-row .eyebrow { margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.note { margin-top: 14px; padding: 9px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-size: 12.5px; }
+.empty { padding: 48px 24px; text-align: center; }
+.empty h2 { font-size: 18px; margin: 12px 0 6px; }
+.empty p { color: var(--muted); max-width: 460px; margin: 0 auto; }
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; text-align: left; }
+@media (max-width: 700px) { .how { grid-template-columns: minmax(0, 1fr); } }
+.how div { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 13px; color: var(--muted); }
+.how b { display: block; color: var(--text); margin-bottom: 2px; }
+
+/* ---------- settings */
+.settings-groups { display: grid; gap: 0; }
+.group { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; padding: 16px 0; border-top: 1px solid var(--border); }
+.group:first-child { border-top: 0; padding-top: 4px; }
+@media (max-width: 760px) { .group { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+.group-title b { display: block; font-size: 13.5px; font-weight: 600; }
+.group-title span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 18px; align-items: start; }
+details.advanced summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 12px 0 0; border-top: 1px solid var(--border); list-style: none; display: flex; align-items: center; gap: 6px; }
+details.advanced summary::-webkit-details-marker { display: none; }
+details.advanced summary::before { content: '›'; display: inline-block; transition: transform .15s; font-size: 16px; }
+details.advanced[open] summary::before { transform: rotate(90deg); }
+details.advanced .fields { margin-top: 14px; }
+
+/* ---------- file size */
+.size-hint { align-self: end; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.size-hint b { color: var(--text); font-weight: 600; }
+.meter { display: inline-flex; gap: 2px; vertical-align: -1px; margin-right: 6px; }
+.meter i { width: 6px; height: 11px; border-radius: 2px; background: var(--surface-3); }
+.meter i.on { background: var(--good); }
+.meter.mid i.on { background: var(--accent); }
+.meter.low i.on { background: var(--warm); }
+.size-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+.size-table th { text-align: left; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.size-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.size-table tr:last-child td { border-bottom: 0; }
+.size-table td.num, .size-table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.shrink-list { max-height: 260px; overflow: auto; border: 1px solid var(--border); border-radius: 9px; margin-top: 8px; }
+.shrink-list label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.shrink-list label:last-child { border-bottom: 0; }
+.shrink-list label:hover { background: var(--surface-2); }
+.shrink-list .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dialog-body { padding: 4px 18px 18px; display: grid; gap: 14px; }
+.dialog-foot { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--border); }
+dialog.panel { border: 0; padding: 0; border-radius: 14px; background: var(--surface); color: var(--text); width: min(760px, 94vw); box-shadow: 0 30px 80px rgba(0, 0, 0, .4); }
+dialog.panel::backdrop { background: rgba(8, 10, 14, .55); }
+.job { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; border: 1px dashed var(--accent-line); }
+
+/* ---------- results */
+.results { display: grid; gap: 6px; }
+.result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2); }
+.result .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result .sub { font-size: 12px; color: var(--muted); }
+.result.merged { border-color: var(--accent-line); background: var(--accent-soft); }
+
+/* ---------- overlays */
+.drop-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(3px); pointer-events: none; opacity: 0; transition: opacity .12s; }
+.drop-overlay.show { opacity: 1; }
+.drop-overlay div { padding: 34px 48px; border: 2px dashed var(--accent); border-radius: 16px; background: var(--surface); text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, .18); }
+.drop-overlay b { display: block; font-size: 18px; margin-top: 8px; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); z-index: 60; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 13.5px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: min(560px, 90vw); box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+dialog.viewer { border: 0; padding: 0; border-radius: 14px; background: var(--surface); color: var(--text); width: min(2000px, 94vw); box-shadow: 0 30px 80px rgba(0, 0, 0, .4); }
+dialog.viewer::backdrop { background: rgba(8, 10, 14, .6); }
+.viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; }
+.viewer-head b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+dialog.viewer video { border-radius: 0 0 14px 14px; max-height: calc(94vh - 60px); }
+kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface); }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; vertical-align: -2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<link rel="stylesheet" href="/editor.css">
+</head>
+<body>
+<header class="topbar">
+	<div class="brand">
+		<div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></div>
+		<div class="brand-text"><h1>Video Upscaler</h1><p>Old home videos to 1080p, and editing · everything runs on this PC</p></div>
+		<div class="ed-bar-left">
+			<input class="input ed-name" id="ed-name" aria-label="Name of this edit" spellcheck="false" title="Name of this edit (also the name of the exported file)">
+			<button class="btn sm" id="ed-edits" title="Open another edit or a project file, or start a new one">Edits ▾</button>
+			<button class="icon-btn" id="ed-save-file" title="Save as a project file, to open again later (Ctrl+S)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
+			<span class="small muted ed-saved" id="ed-saved"></span>
+		</div>
+	</div>
+	<nav class="tabs" id="tabs" role="tablist" aria-label="What to do">
+		<button role="tab" data-tab="upscale" class="active" aria-selected="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span><b>Upscale</b><small>Sharper, larger videos</small></span></button>
+		<button role="tab" data-tab="edit" aria-selected="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><span><b>Edit</b><small>Cut, join, speed up</small></span></button>
+	</nav>
+	<div class="topbar-right">
+		<div class="ed-bar-right">
+			<span class="small muted num" id="ed-summary"></span>
+			<button class="btn primary" id="ed-export">Export video…</button>
+		</div>
+		<div class="status-pill" id="top-status"><span class="dot"></span><span id="top-status-text">Idle</span></div>
+	</div>
+</header>
+<div class="update-banner" id="update-banner" hidden><b>The app was updated while it was running.</b> Close the “Video Upscaler” window and start it again with <b>start.bat</b> to use the Edit tab. A video that is being made continues where it was.</div>
+
+<main class="layout" id="upscale-tab">
+	<!-- ===================== queue ===================== -->
+	<aside class="card queue-panel">
+		<div class="card-head">
+			<h2>Queue <span class="count num" id="queue-count">0</span></h2>
+			<div class="queue-actions">
+				<button class="btn sm" id="add-files">Add files…</button>
+				<button class="btn sm" id="add-folder">Add folder…</button>
+			</div>
+		</div>
+		<div class="dropzone" id="dropzone">
+			<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+			<b>Drop videos or folders here</b>
+			<span class="small hint">They are copied into the input folder and added in order.</span>
+		</div>
+		<ol class="queue" id="queue"></ol>
+		<div class="queue-links">
+			<button class="link" id="clear-finished">Clear finished</button>
+			<button class="link" id="open-input">Open input folder</button>
+		</div>
+		<div class="queue-foot">
+			<div class="totals"><span id="totals-left">No videos yet</span><span id="totals-right"></span></div>
+			<label class="check">
+				<span class="switch"><input type="checkbox" id="merge"><span></span></span>
+				<span><b>Also make one merged video</b><small>All finished videos joined in queue order, with a chapter per video</small></span>
+			</label>
+			<input class="input" id="merge-name" placeholder="Name for the merged video (optional)" hidden>
+			<button class="btn primary block" id="start">Start queue</button>
+			<button class="btn block" id="pause" hidden title="Stops the video that is being made, so the GPU is free for other things. Resume continues where it stopped.">Pause</button>
+			<button class="btn danger block" id="stop" hidden title="Cancels the video that is being processed; the rest stays in the queue">Stop queue</button>
+		</div>
+	</aside>
+
+	<!-- ===================== workspace ===================== -->
+	<section class="workspace">
+		<!-- progress -->
+		<div class="card progress-card" id="progress-card" hidden>
+			<div class="card-body">
+				<div class="progress-top">
+					<h2 id="progress-title">Processing</h2>
+					<span class="muted small num" id="progress-sub"></span>
+				</div>
+				<div class="bar" id="batch-bar"><div></div></div>
+				<div class="stats">
+					<div class="stat"><small>Overall</small><b id="stat-percent">–</b></div>
+					<div class="stat"><small>Elapsed</small><b id="stat-elapsed">–</b></div>
+					<div class="stat"><small>Time left</small><b id="stat-left">–</b></div>
+					<div class="stat"><small>Ready at</small><b id="stat-eta">–</b></div>
+				</div>
+				<div class="current" id="current" hidden>
+					<div class="q-thumb" id="current-thumb"></div>
+					<div style="min-width:0">
+						<div class="q-name" id="current-name"></div>
+						<div class="small muted num" id="current-phase"></div>
+						<div class="bar thin"><div id="current-bar"></div></div>
+					</div>
+				</div>
+				<div class="steps" id="steps"></div>
+				<div class="current" id="merge-row" hidden>
+					<div class="q-thumb" style="display:grid;place-items:center;color:var(--accent)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h7M4 12h16M4 18h7M15 6l5 6-5 6"/></svg></div>
+					<div style="min-width:0">
+						<div class="q-name" id="merge-name-label">Merged video</div>
+						<div class="small muted" id="merge-detail"></div>
+						<div class="bar thin"><div id="merge-bar"></div></div>
+					</div>
+				</div>
+				<div class="error-box" id="progress-error" hidden></div>
+				<div class="progress-actions">
+					<button class="btn sm" id="progress-pause" hidden>Pause</button>
+					<button class="btn sm" id="toggle-log">Show log</button>
+					<button class="btn sm" id="progress-open-output">Open output folder</button>
+					<button class="btn sm quiet" id="progress-dismiss" hidden>Hide</button>
+				</div>
+				<pre class="log" id="log" hidden></pre>
+			</div>
+		</div>
+
+		<!-- editor / empty state -->
+		<div class="card" id="empty">
+			<div class="empty">
+				<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>
+				<h2>Add videos to get started</h2>
+				<p>Drop files or a whole folder on this page, or use <b>Add files…</b> / <b>Add folder…</b>. Each video gets its own section, and its own crop or one crop for all; the settings below apply to all of them.</p>
+				<div class="how">
+					<div><b>1 · Queue</b>Add videos, put them in order. Select one to choose a section or crop.</div>
+					<div><b>2 · Settings</b>Person for the face lock, resolution, frame rate — once for the whole queue.</div>
+					<div><b>3 · Start</b>Videos are done one by one. Optionally all results are merged into one file.</div>
+				</div>
+			</div>
+		</div>
+		<div class="card" id="editor" hidden>
+			<div class="card-body">
+				<div class="editor-head">
+					<div style="min-width:0">
+						<p class="eyebrow" id="editor-eyebrow">Selected video</p>
+						<h2 id="editor-name"></h2>
+						<div class="editor-meta num" id="editor-meta"></div>
+					</div>
+					<div class="row" style="flex-wrap:nowrap">
+						<span class="chip" id="editor-status"></span>
+						<button class="btn sm" id="editor-edit" title="Cut, join or speed up this video in the Edit tab">Edit this video</button>
+						<button class="btn sm quiet" id="editor-reveal" title="Show the original file in Explorer">Show file</button>
+					</div>
+				</div>
+				<div class="player-box" id="player-box">
+					<video id="player" controls preload="auto"></video>
+					<div class="preview-wait" id="preview-wait" hidden><div><b id="preview-wait-text"><span class="spinner"></span> Loading the video…</b><div class="bar" id="preview-wait-bar" hidden><div></div></div><small id="preview-wait-note"></small></div></div>
+					<div class="compare-layer" id="compare-layer" title="Drag to compare the original with the adjusted brightness" hidden>
+						<canvas id="compare-canvas"></canvas>
+						<div class="compare-line" id="compare-line"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></span></div>
+						<span class="compare-tag left">Original</span><span class="compare-tag right" id="compare-tag"></span>
+					</div>
+					<div class="crop-layer" id="crop-layer"><div class="crop-rect" id="crop-rect" hidden><span class="h nw"></span><span class="h ne"></span><span class="h sw"></span><span class="h se"></span></div></div>
+				</div>
+				<div class="timeline" id="timeline" title="Click to jump, drag the handles to set start and end">
+					<div class="shade" id="shade-left"></div><div class="shade" id="shade-right"></div>
+					<div class="sel" id="sel"></div><div class="playhead" id="playhead"></div>
+					<div class="handle" id="handle-start"></div><div class="handle" id="handle-end"></div>
+				</div>
+				<div class="tool-rows">
+					<div class="tool-row">
+						<p class="eyebrow">Section</p>
+						<div class="row">
+							<input class="input time" id="start-text" title="Start (m:ss)"><button class="btn sm" id="set-start" title="Shortcut: I">Set start</button>
+							<span class="muted">–</span>
+							<input class="input time" id="end-text" title="End (m:ss)"><button class="btn sm" id="set-end" title="Shortcut: O">Set end</button>
+							<span class="sep"></span>
+							<span class="num" id="sel-length"></span>
+							<button class="btn sm quiet" id="play-sel">Play section</button>
+							<button class="btn sm quiet" id="whole">Whole video</button>
+						</div>
+					</div>
+					<div class="tool-row">
+						<p class="eyebrow">Crop</p>
+						<div class="row">
+							<div class="segmented" id="crop-mode">
+								<button data-mode="auto" title="Remove black borders automatically">Auto</button>
+								<button data-mode="off">None</button>
+								<button data-mode="custom">Custom</button>
+							</div>
+							<button class="btn sm" id="crop-edit">Draw on video</button>
+							<button class="btn sm" id="crop-detect" title="Finds the part of the picture that changes, e.g. the webcam image inside a screen recording">Detect picture area</button>
+							<span class="sep"></span>
+							<div class="segmented" id="crop-scope">
+								<button data-scope="one" title="Each video has its own crop">This video</button>
+								<button data-scope="all" title="Every video that isn't made yet uses this crop, also videos you add later. Changing it on any video changes it for all. Videos of another size get the same part of the picture.">All videos</button>
+							</div>
+							<span class="small muted num" id="crop-info"></span>
+						</div>
+					</div>
+					<div class="tool-row" id="bright-row">
+						<p class="eyebrow">Brightness</p>
+						<div class="row">
+							<button class="btn sm" id="bright-compare" title="Shows the current frame before and after, with a divider you can drag">Compare on this frame</button>
+							<input type="range" class="inline" id="bright-gamma" min="0.7" max="1.8" step="0.05" value="1" aria-label="Brightness">
+							<span class="small num" id="bright-value"></span>
+							<span class="small muted" id="bright-info">same setting for all videos</span>
+						</div>
+					</div>
+				</div>
+				<div class="note" id="editor-note" hidden></div>
+				<div class="small muted" style="margin-top:12px">Keys: <kbd>Space</kbd> play/pause · <kbd>I</kbd>/<kbd>O</kbd> set start/end · <kbd>←</kbd>/<kbd>→</kbd> one frame · <kbd>B</kbd> compare brightness</div>
+			</div>
+		</div>
+
+		<!-- settings -->
+		<div class="card">
+			<div class="card-head"><h2>Settings</h2><span class="small muted" id="settings-note">Applies to every video in the queue</span></div>
+			<div class="card-body">
+				<div class="settings-groups">
+					<div class="group">
+						<div class="group-title"><b>Face lock</b><span>Keeps the face true to your reference photos</span></div>
+						<div class="fields">
+							<div class="field"><label class="label" for="person">Person</label><select class="input" id="person"></select></div>
+							<div class="field"><label class="label" for="identity">Identity strength <span id="identity-value" class="muted"></span></label><input type="range" id="identity" min="0.3" max="0.8" step="0.05" value="0.5"></div>
+						</div>
+					</div>
+					<div class="group">
+						<div class="group-title"><b>Output</b><span>Size and smoothness of the result</span></div>
+						<div class="fields">
+							<div class="field"><span class="label">Resolution</span><div class="segmented" id="height"><button data-value="720">720p</button><button data-value="1080">1080p</button><button data-value="1440">1440p</button></div></div>
+							<div class="field">
+								<label class="label" for="fps-preset">Frame rate</label>
+								<select class="input" id="fps-preset">
+									<option value="">Original</option><option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option><option value="50">50 fps</option><option value="60">60 fps</option><option value="custom">Custom…</option>
+								</select>
+								<input class="input" type="number" id="fps-custom" min="1" max="120" step="0.001" placeholder="e.g. 29.97" style="margin-top:6px" hidden>
+							</div>
+							<div class="field"><span class="label">Motion quality</span><div class="segmented" id="motion"><button data-value="best" title="Creates the in-between frames first, then upscales and face-locks every frame">Best</button><button data-value="fast" title="Blends finished frames; about 2.5× quicker">Fast</button></div></div>
+							<label class="check" style="grid-column:1/-1"><input type="checkbox" id="smooth"><span>Smooth repeated and damaged frames<small>For choppy webcam, phone and screen-recorded clips. Does nothing on clips without them.</small></span></label>
+						</div>
+					</div>
+					<div class="group">
+						<div class="group-title"><b>File size</b><span>Smaller files are easier to share</span></div>
+						<div class="fields">
+							<div class="field" style="grid-column:1/-1">
+								<div class="segmented" id="size"><button data-value="original">Full quality</button><button data-value="near">Near lossless</button><button data-value="balanced">Balanced</button><button data-value="small">Small</button></div>
+							</div>
+							<div class="field" id="format-field">
+								<label class="label" for="format">Format</label>
+								<select class="input" id="format">
+									<option value="av1">AV1 – smallest</option>
+									<option value="h265">H.265 – for iPhones</option>
+									<option value="h264">H.264 – plays everywhere</option>
+								</select>
+							</div>
+							<div class="size-hint" id="size-hint"></div>
+						</div>
+					</div>
+					<div class="group">
+						<div class="group-title"><b>Picture</b><span>Only for difficult footage</span></div>
+						<div class="fields">
+							<div class="field"><label class="label" for="denoise">Noise reduction</label><select class="input" id="denoise"><option value="off">Off (recommended)</option><option value="light">Light</option><option value="medium">Medium – noisy or low light</option><option value="strong">Strong</option></select></div>
+							<div class="field"><label class="label" for="gamma">Brightness <span id="gamma-value" class="muted"></span></label><input type="range" id="gamma" min="0.7" max="1.8" step="0.05" value="1"><button class="link" id="gamma-compare">Compare on a frame of the selected video</button></div>
+						</div>
+					</div>
+					<div class="group">
+						<div class="group-title"><b>Sound and files</b><span>What ends up in the output folder</span></div>
+						<div class="fields">
+							<label class="check"><input type="checkbox" id="audio"><span>Keep the original sound<small>Off: the videos and the merged video are silent</small></span></label>
+							<label class="check"><input type="checkbox" id="compare"><span>Side-by-side comparison videos<small>Saved in output\compare (original · upscaled · final)</small></span></label>
+						</div>
+					</div>
+				</div>
+				<details class="advanced">
+					<summary>Advanced</summary>
+					<div class="fields">
+						<div class="field"><label class="label" for="model">Upscale model</label><select class="input" id="model"></select></div>
+						<div class="field"><label class="label" for="batch">Frames processed together</label><select class="input" id="batch"><option>21</option><option>33</option><option>45</option><option>61</option></select></div>
+						<div class="field"><label class="label" for="enhance">Face detail <span id="enhance-value" class="muted"></span></label><input type="range" id="enhance" min="0" max="100" step="5" value="50"></div>
+						<div class="field"><label class="label" for="face-enhancer">Face texture model</label><select class="input" id="face-enhancer"><option value="gfpgan_1.4">GFPGAN 1.4</option><option value="codeformer">CodeFormer</option></select></div>
+						<label class="check"><input type="checkbox" id="expression"><span>Keep original facial expression<small>LivePortrait expression restore</small></span></label>
+					</div>
+				</details>
+			</div>
+		</div>
+
+		<!-- results -->
+		<div class="card">
+			<div class="card-head"><h2>Results</h2><div class="row"><button class="btn sm" id="shrink-open">Make smaller…</button><button class="btn sm" id="open-output">Open output folder</button></div></div>
+			<div class="card-body">
+				<div class="results" id="shrink-jobs" style="margin-bottom:12px" hidden>
+					<div class="results" id="shrink-job-rows"></div>
+					<div class="row"><button class="btn sm danger" id="shrink-stop">Stop making smaller</button><button class="btn sm quiet" id="shrink-clear">Hide failed</button></div>
+				</div>
+				<div class="results" id="results"><span class="muted small">Finished videos appear here.</span></div>
+			</div>
+		</div>
+	</section>
+</main>
+
+<!-- ===================== edit tab (ui/editor.js) ===================== -->
+<main class="edit-layout" id="edit-tab" hidden>
+	<aside class="card ed-library">
+		<div class="card-head"><h2>Videos</h2><div class="row" style="flex-wrap:nowrap;gap:4px"><button class="btn sm" id="ed-add" title="Any video on this PC">Add videos…</button><button class="icon-btn" id="ed-lib-close" title="Fold this list away: more room for the video"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button></div></div>
+		<p class="small muted ed-lib-hint">Click <b>+</b> or drag a video onto the timeline.</p>
+		<div class="ed-lib" id="ed-library"><div class="lib-empty"><span class="spinner"></span></div></div>
+		<div class="ed-lib-rail">
+			<button class="ed-rail-open" id="ed-lib-open" title="Show your videos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg><span>Videos</span></button>
+			<button class="icon-btn ed-rail-add" id="ed-rail-add" title="Add videos from this PC">+</button>
+		</div>
+	</aside>
+	<section class="card ed-viewer">
+		<div class="ed-job" id="ed-job" hidden></div>
+		<div class="ed-stage-box" id="ed-stage-box">
+			<div class="ed-stage" id="ed-stage">
+				<div class="ed-layer" hidden><div class="ed-frame"><video playsinline preload="auto"></video></div></div>
+				<div class="ed-layer" hidden><div class="ed-frame"><video playsinline preload="auto"></video></div></div>
+				<div class="ed-layer" hidden><div class="ed-frame"><video playsinline preload="auto"></video></div></div>
+				<canvas class="ed-texts" id="ed-texts"></canvas>
+				<div class="ed-text-ui" id="ed-text-ui"></div>
+				<textarea class="ed-text-edit" id="ed-text-edit" hidden spellcheck="false" aria-label="The text on the video"></textarea>
+				<div class="ed-guide v" id="ed-guide-v" hidden></div><div class="ed-guide h" id="ed-guide-h" hidden></div>
+				<div class="ed-crop" id="ed-crop" hidden><div class="crop-rect" id="ed-crop-rect"><span class="h nw"></span><span class="h ne"></span><span class="h sw"></span><span class="h se"></span></div></div>
+				<div class="ed-wait" id="ed-wait" hidden></div>
+			</div>
+			<div class="ed-empty" id="ed-empty">
+				<div class="ed-start">
+					<b>Start your edit: add a video</b>
+					<span>Click a video to put it on the timeline below. Add more videos the same way, or later from the list on the left.</span>
+					<div class="ed-start-list" id="ed-start-list"></div>
+					<button class="btn primary" id="ed-start-add">Choose videos on this PC…</button>
+				</div>
+			</div>
+		</div>
+		<input type="range" class="ed-seek" id="ed-seek" min="0" max="1000" step="1" value="0" aria-label="Position in the edit">
+		<div class="ed-transport">
+			<div class="row" style="flex-wrap:nowrap">
+				<button class="icon-btn" id="ed-start" title="To the start (Home)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+				<button class="icon-btn" id="ed-back" title="One frame back (←)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+				<button class="icon-btn ed-play" id="ed-play" title="Play (Space)"></button>
+				<button class="icon-btn" id="ed-forward" title="One frame forward (→)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+				<button class="icon-btn" id="ed-end" title="To the end (End)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+				<span class="num ed-time" id="ed-time" style="margin-left:8px"></span>
+			</div>
+			<div class="row" style="flex-wrap:nowrap">
+				<span class="small muted num" id="ed-format-info"></span>
+				<button class="icon-btn" id="ed-mute" title="Sound on/off while playing here"></button>
+				<input type="range" class="ed-volume" id="ed-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+				<button class="icon-btn" id="ed-full" title="Full screen (F, or double-click the video)"></button>
+			</div>
+		</div>
+	</section>
+	<aside class="card ed-inspector" id="ed-inspector"></aside>
+	<section class="card ed-timeline">
+		<div class="ed-tools">
+			<div class="row" style="flex-wrap:nowrap">
+				<button class="btn sm" id="ed-split" title="Split the clip at the playhead (S)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg>Split</button>
+				<button class="btn sm" id="ed-delete" title="Remove the selected clip or part (Delete)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Delete</button>
+				<button class="btn sm" id="ed-text-add" title="Put a text on the video at the playhead (T)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg>Add text</button>
+				<span class="sep"></span>
+				<button class="icon-btn" id="ed-undo" title="Undo (Ctrl+Z)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+				<button class="icon-btn" id="ed-redo" title="Redo (Ctrl+Y)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+			</div>
+			<span class="small muted ed-hint" id="ed-hint"></span>
+			<div class="row" style="flex-wrap:nowrap">
+				<button class="icon-btn" id="ed-zoom-out" title="Zoom out (−)">−</button>
+				<input type="range" class="ed-zoom" id="ed-zoom" min="0" max="100" step="1" value="0" aria-label="Zoom">
+				<button class="icon-btn" id="ed-zoom-in" title="Zoom in (+, or Ctrl + mouse wheel)">+</button>
+				<button class="btn sm quiet" id="ed-zoom-fit" title="Show the whole edit">Fit</button>
+				<button class="btn sm quiet" id="ed-keys" title="All keyboard keys"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>Keys</button>
+			</div>
+		</div>
+		<div class="tl-scroll" id="ed-scroll">
+			<div class="tl-inner" id="ed-inner">
+				<div class="tl-ruler" id="ed-ruler" title="Click to jump there, drag to select a part"></div>
+				<div class="tl-track" id="ed-track"></div>
+				<div class="tl-range" id="ed-range" hidden></div>
+				<div class="tl-drop" id="ed-drop" hidden></div>
+				<div class="tl-playhead" id="ed-playhead"><span title="Drag to scrub"></span></div>
+			</div>
+		</div>
+	</section>
+</main>
+<div class="ed-menu" id="ed-menu" hidden></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="ed-filters"></defs></svg>
+
+<div class="drop-overlay" id="drop-overlay"><div>
+	<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+	<b id="drop-title">Drop to add to the queue</b><span class="muted small">Videos and folders</span>
+</div></div>
+<div class="toast" id="toast"></div>
+<dialog class="panel" id="shrink-dialog">
+	<div class="viewer-head"><b style="font-size:15px">Make videos smaller</b><button class="icon-btn" id="shrink-close" title="Close">✕</button></div>
+	<div class="dialog-body">
+		<div>
+			<div class="row" style="justify-content:space-between"><span class="label" style="margin:0">Videos</span><div class="row"><button class="link" id="shrink-all">Select all</button><button class="link" id="shrink-other">Add other videos…</button></div></div>
+			<div class="shrink-list" id="shrink-list"></div>
+		</div>
+		<div class="fields">
+			<div class="field"><span class="label">Level</span><div class="segmented" id="shrink-quality"><button data-value="near">Near lossless</button><button data-value="balanced" class="active">Balanced</button><button data-value="small">Small</button></div></div>
+			<div class="field"><label class="label" for="shrink-format">Format</label><select class="input" id="shrink-format"><option value="av1">AV1 – smallest</option><option value="h265">H.265 – for iPhones</option><option value="h264">H.264 – plays everywhere</option></select></div>
+		</div>
+		<div>
+			<span class="label">What to expect <span class="muted">(measured on an upscaled home video; the real result per file is measured after)</span></span>
+			<table class="size-table" id="shrink-table"></table>
+			<div class="small muted" id="shrink-compat" style="margin-top:8px"></div>
+		</div>
+	</div>
+	<div class="dialog-foot"><span class="small muted" id="shrink-summary"></span><button class="btn primary" id="shrink-start">Make smaller</button></div>
+</dialog>
+<dialog class="panel" id="ed-export-dialog">
+	<div class="viewer-head"><b style="font-size:15px">Export video</b><button class="icon-btn" id="ed-export-close" title="Close">✕</button></div>
+	<div class="dialog-body">
+		<div class="field"><label class="label" for="ed-export-name">Name</label><input class="input" id="ed-export-name"></div>
+		<div class="fields">
+			<div class="field" style="grid-column:1/-1"><span class="label">File size</span><div class="segmented" id="ed-size"><button data-value="original">Full quality</button><button data-value="near">Near lossless</button><button data-value="balanced">Balanced</button><button data-value="small">Small</button></div></div>
+			<div class="field" id="ed-format-field"><label class="label" for="ed-format">Format</label><select class="input" id="ed-format"><option value="av1">AV1 – smallest</option><option value="h265">H.265 – for iPhones</option><option value="h264">H.264 – plays everywhere</option></select></div>
+			<div class="size-hint" id="ed-size-hint"></div>
+		</div>
+		<label class="check"><input type="checkbox" id="ed-audio"><span>Keep the sound<small>Off: the video is silent</small></span></label>
+		<div class="note" id="ed-export-info" style="margin:0"></div>
+	</div>
+	<div class="dialog-foot"><span class="small muted">File size and sound are the same settings as in Upscale → Settings</span><button class="btn primary" id="ed-export-start">Export</button></div>
+</dialog>
+<dialog class="viewer" id="viewer">
+	<div class="viewer-head"><b id="viewer-name"></b><div class="row" style="flex-wrap:nowrap"><div class="segmented" id="viewer-tabs" hidden><button data-tab="video" class="active">Result</button><button data-tab="compare">Side by side</button></div><button class="btn sm" id="viewer-reveal">Show in folder</button><button class="icon-btn" id="viewer-close" title="Close">✕</button></div></div>
+	<video id="viewer-video" controls></video>
+</dialog>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const state = { tab: 'upscale', items: [], settings: null, selected: null, data: null, crop: null, cropEditing: false, logOpen: false, dismissedBatch: null, previews: {}, loadingPreview: null };
+const ICON = {
+	up: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 15l6-6 6 6"/></svg>',
+	down: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>',
+	remove: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+	retry: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg>',
+	play: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'
+};
+
+async function api(path, body) {
+	const options = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Upscaler': '1' }, body: JSON.stringify(body) };
+	const response = await fetch(path, options);
+	const data = await response.json().catch(() => ({}));
+	if (!response.ok) throw new Error(data.error || response.statusText);
+	return data;
+}
+const media = (path) => '/media?path=' + encodeURIComponent(path);
+const esc = (text) => String(text ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let toastTimer;
+function toast(text, sticky) {
+	$('toast').textContent = text; $('toast').classList.add('show');
+	clearTimeout(toastTimer);
+	if (!sticky) toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3500);
+}
+
+// ---------------------------------------------------------------- time formatting
+function clock(seconds, decimals) {
+	if (seconds == null || !isFinite(seconds)) return '–';
+	seconds = Math.max(seconds, 0);
+	const h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
+	const sec = decimals ? s.toFixed(decimals).padStart(3 + decimals, '0') : String(Math.floor(s)).padStart(2, '0');
+	return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+function parseClock(text) {
+	text = String(text).trim().replace(',', '.');
+	if (!text) return null;
+	const parts = text.split(':');
+	if (parts.length > 3 || parts.some(p => !/^\d+(\.\d+)?$/.test(p))) return null;
+	return parts.reduce((total, part) => total * 60 + parseFloat(part), 0);
+}
+function human(seconds) {
+	if (seconds == null || !isFinite(seconds)) return '–';
+	seconds = Math.round(seconds);
+	if (seconds < 60) return seconds + ' s';
+	const h = Math.floor(seconds / 3600), m = Math.round(seconds % 3600 / 60);
+	return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${Math.round(seconds / 60)} min`;
+}
+const timeOfDay = (epoch) => new Date(epoch * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const statusText = { queued: 'Queued', running: 'Processing', paused: 'Paused', done: 'Done', error: 'Failed', cancelled: 'Stopped' };
+
+// ---------------------------------------------------------------- queue list
+const selected = () => state.items.find(item => item.id === state.selected) || null;
+function itemBadges(item) {
+	const badges = [];
+	if (item.start > 0.05 || item.end < item.duration - 0.05) badges.push(`${clock(item.start)}–${clock(item.end)}`);
+	if (item.crop && item.crop.includes(':')) badges.push('crop ' + item.crop.split(':').slice(0, 2).join('×'));
+	else if (item.crop === 'off') badges.push('no crop');
+	return badges.map(b => `<span class="badge num">${esc(b)}</span>`).join('');
+}
+function itemHTML(item, index) {
+	const running = item.status === 'running';
+	const job = state.data && state.data.job;
+	const percent = running && job ? Math.round(job.percent || 0) : 0;
+	const length = item.end - item.start;
+	const chip = running ? `<span class="chip running num">${percent}%</span>`
+		: item.status === 'paused' ? `<span class="chip paused num">Paused${job && job.status === 'paused' && job.percent ? ` · ${Math.round(job.percent)}%` : ''}</span>`
+		: item.status === 'queued' ? `<span class="chip num" title="Estimated processing time">≈ ${human(item.estimate)}</span>`
+		: `<span class="chip ${item.status}">${statusText[item.status]}</span>`;
+	const tools = running ? '' : `${item.status === 'done' && item.output ? `<button class="icon-btn" data-act="play" title="Play result">${ICON.play}</button>` : ''}${['error', 'cancelled', 'done'].includes(item.status) ? `<button class="icon-btn" data-act="retry" title="Process again">${ICON.retry}</button>` : ''}<button class="icon-btn" data-act="up" title="Move up" ${index === 0 ? 'disabled' : ''}>${ICON.up}</button><button class="icon-btn" data-act="down" title="Move down" ${index === state.items.length - 1 ? 'disabled' : ''}>${ICON.down}</button><button class="icon-btn danger" data-act="remove" title="Remove from queue">${ICON.remove}</button>`;
+	return `<div class="q-thumb" style="${item.thumb ? `background-image:url('${media(item.thumb)}')` : ''}"><span class="q-index num">${index + 1}</span></div>
+		<div style="min-width:0"><div class="q-name" title="${esc(item.path)}">${esc(item.name)}</div>
+		<div class="q-meta num">${clock(length)}${length < item.duration - 0.05 ? ' of ' + clock(item.duration) : ''} · ${item.width}×${item.height} · ${+item.fps.toFixed(2)} fps${item.has_audio ? '' : ' · no sound'}</div>
+		${itemBadges(item) ? `<div class="q-badges">${itemBadges(item)}</div>` : ''}
+		${running ? `<div class="q-bar"><div style="width:${percent}%"></div></div>` : ''}</div>
+		<div class="q-side">${chip}<div class="q-tools">${tools}</div></div>`;
+}
+function renderQueue() {
+	const list = $('queue'), items = state.items;
+	$('queue-count').textContent = items.length;
+	$('dropzone').classList.toggle('compact', items.length > 0);
+	const existing = new Map([...list.children].map(li => [li.dataset.id, li]));
+	if (!items.length) { list.innerHTML = '<li class="q-empty">The queue is empty</li>'; }
+	else {
+		const empty = list.querySelector('.q-empty'); if (empty) empty.remove();
+		items.forEach((item, index) => {
+			let li = existing.get(item.id);
+			if (!li) { li = document.createElement('li'); li.dataset.id = item.id; }
+			existing.delete(item.id);
+			const html = itemHTML(item, index);
+			if (li.dataset.html !== html) { li.innerHTML = html; li.dataset.html = html; }
+			li.className = `q-item ${item.status}${item.id === state.selected ? ' selected' : ''}`;
+			if (list.children[index] !== li) list.insertBefore(li, list.children[index] || null);
+		});
+		existing.forEach(li => li.remove());
+	}
+	const queued = items.filter(i => i.status === 'queued' || i.status === 'paused');
+	const seconds = queued.reduce((t, i) => t + (i.end - i.start), 0);
+	$('totals-left').innerHTML = items.length ? `<b>${queued.length}</b> to do · ${clock(seconds)} of video` : 'No videos yet';
+	$('totals-right').innerHTML = queued.length ? `≈ <b>${human(queued.reduce((t, i) => t + i.estimate, 0))}</b>` : '';
+	const running = state.data && state.data.running, paused = state.data && state.data.paused;
+	const merging = state.data && state.data.batch && state.data.batch.merge && state.data.batch.merge.status === 'running';
+	$('start').hidden = running; $('stop').hidden = !running && !paused; $('pause').hidden = !running || merging;
+	$('start').disabled = !queued.length && !paused;
+	$('start').textContent = paused ? 'Resume queue' : queued.length > 1 ? `Start queue · ${queued.length} videos` : queued.length === 1 ? 'Start · 1 video' : 'Nothing to do';
+}
+$('queue').addEventListener('click', async (event) => {
+	const li = event.target.closest('.q-item'); if (!li) return;
+	const id = li.dataset.id, act = event.target.closest('[data-act]')?.dataset.act;
+	try {
+		if (act === 'up' || act === 'down') await api('/api/queue/move', { id, delta: act === 'up' ? -1 : 1 });
+		else if (act === 'remove') { await api('/api/queue/remove', { id }); if (state.selected === id) state.selected = null; }
+		else if (act === 'retry') await api('/api/queue/requeue', { id });
+		else if (act === 'play') { const item = state.items.find(i => i.id === id); openViewer(item.name, item.output, item.compare); return; }
+		else { select(id); return; }
+		await refresh();
+	} catch (error) { toast(error.message); }
+});
+
+// ---------------------------------------------------------------- adding videos
+async function addViaPicker(mode) {
+	toast(mode === 'folder' ? 'Choose a folder in the window that opened…' : 'Choose videos in the window that opened…', true);
+	try {
+		const result = await api('/api/browse', { mode });
+		reportAdded(result);
+		await refresh();
+	} catch (error) { toast(error.message); }
+}
+function reportAdded(result) {
+	const added = result.added.length, skipped = result.skipped.length;
+	if (!added && !skipped) { $('toast').classList.remove('show'); return; }
+	toast(`${added ? `Added ${added} video${added > 1 ? 's' : ''}` : 'Nothing added'}${skipped ? ` · skipped ${skipped} (${result.skipped.slice(0, 2).map(s => s.path.split(/[\\/]/).pop() + ': ' + s.reason).join(', ')}${skipped > 2 ? '…' : ''})` : ''}`);
+	if (added && !state.selected) state.selected = result.added[0];
+}
+$('add-files').onclick = () => addViaPicker('files');
+$('add-folder').onclick = () => addViaPicker('folder');
+
+const VIDEO_EXT = /\.(avi|mov|mp4|m4v|mkv|mpg|mpeg|wmv|3gp|mts|m2ts|vob|dv|flv|webm)$/i;
+async function collectEntries(entry, prefix, out) {
+	if (entry.isFile) {
+		if (VIDEO_EXT.test(entry.name)) out.push(await new Promise((resolve, reject) => entry.file(file => resolve({ file, path: prefix + entry.name }), reject)));
+	} else if (entry.isDirectory) {
+		const reader = entry.createReader();
+		let batch;
+		do {
+			batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+			for (const child of batch) await collectEntries(child, prefix + entry.name + '/', out);
+		} while (batch.length);
+	}
+}
+function upload(file, relativePath, onProgress) {
+	return new Promise((resolve, reject) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open('POST', '/api/upload');
+		xhr.setRequestHeader('X-Upscaler', '1');
+		xhr.setRequestHeader('X-Filename', encodeURIComponent(relativePath));
+		xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+		xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
+		xhr.onload = () => { try { const data = JSON.parse(xhr.responseText); xhr.status === 200 ? resolve(data) : reject(new Error(data.error || 'upload failed')); } catch { reject(new Error('upload failed')); } };
+		xhr.onerror = () => reject(new Error('upload failed'));
+		xhr.send(file);
+	});
+}
+let dragDepth = 0;
+const hasFiles = (event) => [...(event.dataTransfer?.types || [])].includes('Files');
+window.addEventListener('dragenter', (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $('drop-title').textContent = state.tab === 'edit' ? 'Drop to add to the timeline' : 'Drop to add to the queue'; $('drop-overlay').classList.add('show'); });
+window.addEventListener('dragleave', (e) => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('drop-overlay').classList.remove('show'); });
+window.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener('drop', async (e) => {
+	if (!hasFiles(e)) return;
+	e.preventDefault(); dragDepth = 0; $('drop-overlay').classList.remove('show');
+	// a project file of the Edit tab opens there
+	const projectFile = [...e.dataTransfer.files].find(file => /\.vedit$/i.test(file.name));
+	if (projectFile && editorLoaded()) { showTab('edit'); edOpenDroppedProject(projectFile); return; }
+	const files = [];
+	const entries = [...e.dataTransfer.items].map(item => item.webkitGetAsEntry && item.webkitGetAsEntry()).filter(Boolean);
+	if (entries.length) for (const entry of entries) await collectEntries(entry, '', files);
+	else for (const file of e.dataTransfer.files) if (VIDEO_EXT.test(file.name)) files.push({ file, path: file.name });
+	if (!files.length) { toast('No video files in what you dropped'); return; }
+	files.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
+	if (state.tab === 'edit') { if (editorLoaded()) edAddDropped(files); return; }
+	const paths = [];
+	for (let i = 0; i < files.length; i++) {
+		const { file, path } = files[i];
+		try {
+			const result = await upload(file, path, (f) => toast(`Copying ${i + 1} of ${files.length} · ${path} · ${Math.round(f * 100)}%`, true));
+			paths.push(result.path);
+		} catch (error) { toast(`${path}: ${error.message}`); }
+	}
+	try { reportAdded(await api('/api/queue/add', { paths })); await refresh(); } catch (error) { toast(error.message); }
+});
+
+$('clear-finished').onclick = async () => { await api('/api/queue/clear', { which: 'finished' }); refresh(); };
+$('open-input').onclick = () => api('/api/reveal', { path: state.data.input_dir });
+$('open-output').onclick = $('progress-open-output').onclick = () => api('/api/reveal', { path: state.data.output_dir });
+
+// ---------------------------------------------------------------- start / stop
+$('start').onclick = async () => {
+	const resuming = state.data && state.data.paused;
+	$('start').disabled = true;
+	try {
+		await saveSettingsNow(); await api('/api/start', {}); state.dismissedBatch = null; await refresh();
+		if (resuming) toast('Continuing where it stopped');
+	} catch (error) { toast(error.message); }
+};
+$('stop').onclick = async () => {
+	if (!confirm(state.data && state.data.paused ? 'Stop the queue? The paused video is cancelled; the others stay queued.' : 'Stop the queue? The video that is being processed is cancelled; the others stay queued.')) return;
+	await api('/api/stop', {}); refresh();
+};
+// pause: the video being made is stopped so the GPU is free; resuming redoes only the step or part that was in progress
+$('pause').onclick = $('progress-pause').onclick = async () => {
+	if (state.data && state.data.paused) { $('start').onclick(); return; }
+	try { await api('/api/pause', {}); await refresh(); toast('Paused: the GPU is free. Resume continues where it stopped.'); }
+	catch (error) { toast(error.message); }
+};
+$('merge').onchange = () => { $('merge-name').hidden = !$('merge').checked; scheduleSave(); };
+$('merge-name').oninput = scheduleSave;
+
+// ---------------------------------------------------------------- editor
+const player = $('player');
+async function select(id) {
+	// a crop change still on its way may change the other videos too ("All videos"): send it before showing another one
+	await flushItemSave();
+	state.selected = id;
+	renderQueue();
+	renderEditor(true);
+}
+async function renderEditor(changed) {
+	const item = selected();
+	$('empty').hidden = !!state.items.length;
+	$('editor').hidden = !item;
+	if (!item) return;
+	const locked = item.status === 'running';
+	$('editor-name').textContent = item.name;
+	$('editor-meta').textContent = `${item.width}×${item.height} · ${+item.fps.toFixed(3)} fps · ${clock(item.duration)} · ${item.has_audio ? 'with sound' : 'no sound'}`;
+	$('editor-status').className = 'chip ' + item.status;
+	$('editor-status').textContent = statusText[item.status];
+	$('editor-eyebrow').textContent = `Video ${state.items.indexOf(item) + 1} of ${state.items.length}`;
+	const note = locked ? 'This video is being processed; its section and crop can\'t be changed right now.'
+		: item.status === 'paused' ? 'Paused. Resume the queue to continue where it stopped; changing the section or crop starts this video again.'
+		: item.status === 'done' ? 'Done. Changing the section or crop puts it back in the queue.'
+		: item.status === 'error' ? 'This video failed: ' + (item.message || '').split('\n')[0] : '';
+	$('editor-note').hidden = !note; $('editor-note').textContent = note;
+	for (const el of document.querySelectorAll('#editor .tool-rows button, #editor .tool-rows input')) if (!el.closest('#bright-row')) el.disabled = locked;
+	if (changed || state.editorItem !== item.id) {
+		state.editorItem = item.id;
+		state.start = item.start; state.end = item.end;
+		state.cropEditing = false;
+		compare.frame = null; compare.key = null; $('compare-layer').hidden = true;
+		loadCrop(item);
+		player.removeAttribute('src'); player.load();
+		$('timeline').style.backgroundImage = 'none';
+		loadPreview(item);
+	} else {
+		if (!state.dragging && document.activeElement?.closest('#editor') == null) { state.start = item.start; state.end = item.end; }
+		// a finished video that goes back in the queue gets the "All videos" crop from the server
+		if (item.status !== state.editorStatus && !cropDrag && !state.cropEditing && !pendingItem) loadCrop(item);
+	}
+	state.editorStatus = item.status;
+	renderSection(); renderCrop(); renderPreviewWait(item);
+}
+function loadCrop(item) {
+	state.crop = item.crop && item.crop.includes(':') ? (([w, h, x, y]) => ({ w, h, x, y }))(item.crop.split(':').map(Number)) : null;
+	setCropMode(item.crop && item.crop.includes(':') ? 'custom' : (item.crop || 'auto'), false);
+}
+// videos browsers play are shown as they are; others get a playable copy first (once), with its progress shown
+async function loadPreview(item) {
+	const id = item.id;
+	$('preview-wait').hidden = false;
+	$('preview-wait-text').innerHTML = '<span class="spinner"></span> Loading the video…';
+	$('preview-wait-bar').hidden = true; $('preview-wait-note').textContent = '';
+	try {
+		// one request per video, also when it is selected again while its copy is still being made
+		state.previews[id] ||= api('/api/preview', { id }).catch((error) => { delete state.previews[id]; throw error; });
+		const preview = await state.previews[id];
+		if (state.editorItem !== id) return;
+		// (preview.preview: a server started before the update, until it is restarted)
+		player.src = media(preview.url || preview.preview);
+		if (preview.strip) $('timeline').style.backgroundImage = `url("${media(preview.strip)}")`;
+		else api('/api/edit/strip', { path: item.path }).then(result => { if (state.editorItem === id && result.strip) $('timeline').style.backgroundImage = `url("${media(result.strip)}")`; }).catch(() => {});
+	} catch (error) {
+		if (state.editorItem === id) { $('preview-wait-text').textContent = 'This video cannot be shown: ' + error.message; $('preview-wait-bar').hidden = true; }
+		return;
+	}
+	$('preview-wait').hidden = true;
+	renderCrop();
+}
+function renderPreviewWait(item) {
+	const fraction = state.data?.edit?.preparing?.[item.path];
+	if ($('preview-wait').hidden || fraction == null) return;
+	$('preview-wait-text').textContent = `Making a playable copy of this video · ${Math.round(fraction * 100)}%`;
+	$('preview-wait-bar').hidden = false;
+	$('preview-wait-bar').firstElementChild.style.width = fraction * 100 + '%';
+	$('preview-wait-note').textContent = 'Browsers cannot play this video format. The copy is made once; this video opens at once from now on.';
+}
+$('editor-reveal').onclick = () => { const item = selected(); if (item) api('/api/reveal', { path: item.path }); };
+$('editor-edit').onclick = () => { const item = selected(); if (item) editorLoaded() ? edOpenVideo(item.path) : showTab('edit'); };
+
+// section and crop changes of the selected video, sent together a moment after the last one
+let saveItemTimer, pendingItem = null;
+function saveItem(changes) {
+	const item = selected(); if (!item) return;
+	Object.assign(item, changes);
+	if (pendingItem && pendingItem.id !== item.id) flushItemSave();
+	pendingItem = { id: item.id, changes: { ...(pendingItem ? pendingItem.changes : {}), ...changes } };
+	clearTimeout(saveItemTimer);
+	saveItemTimer = setTimeout(flushItemSave, 300);
+}
+async function flushItemSave() {
+	clearTimeout(saveItemTimer);
+	const pending = pendingItem;
+	pendingItem = null;
+	if (!pending) return;
+	try { await api('/api/queue/update', { id: pending.id, ...pending.changes }); await refresh(); } catch (error) { toast(error.message); }
+}
+function clampSection(item) {
+	const step = 1 / item.fps;
+	state.start = Math.min(Math.max(state.start, 0), item.duration - step);
+	state.end = Math.min(Math.max(state.end, state.start + step), item.duration);
+}
+function renderSection() {
+	const item = selected(); if (!item) return;
+	clampSection(item);
+	const d = item.duration, a = state.start / d * 100, b = state.end / d * 100;
+	$('handle-start').style.left = a + '%'; $('handle-end').style.left = b + '%';
+	$('sel').style.left = a + '%'; $('sel').style.width = (b - a) + '%';
+	$('shade-left').style.cssText = `left:0;width:${a}%`; $('shade-right').style.cssText = `left:${b}%;right:0`;
+	if (document.activeElement !== $('start-text')) $('start-text').value = clock(state.start, 1);
+	if (document.activeElement !== $('end-text')) $('end-text').value = clock(state.end, 1);
+	const length = state.end - state.start;
+	$('sel-length').textContent = `${clock(length, 1)} · ${Math.round(length * item.fps)} frames`;
+}
+function commitSection() {
+	const item = selected(); if (!item) return;
+	clampSection(item); renderSection();
+	if (Math.abs(item.start - state.start) > 1e-3 || Math.abs(item.end - state.end) > 1e-3) saveItem({ start: state.start, end: state.end });
+}
+player.addEventListener('timeupdate', () => {
+	const item = selected(); if (!item) return;
+	$('playhead').style.left = (player.currentTime / item.duration * 100) + '%';
+	if (state.playSection && player.currentTime >= state.end) { player.pause(); state.playSection = false; }
+});
+function timeAt(event) {
+	const rect = $('timeline').getBoundingClientRect();
+	return Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1) * selected().duration;
+}
+$('timeline').addEventListener('pointerdown', (event) => {
+	const item = selected(); if (!item || item.status === 'running') return;
+	state.dragging = event.target === $('handle-start') ? 'start' : event.target === $('handle-end') ? 'end' : 'seek';
+	if (state.dragging === 'seek') player.currentTime = timeAt(event);
+	try { $('timeline').setPointerCapture(event.pointerId); } catch {}
+});
+$('timeline').addEventListener('pointermove', (event) => {
+	if (!state.dragging) return;
+	const t = timeAt(event), step = 1 / selected().fps;
+	if (state.dragging === 'start') { state.start = Math.min(t, state.end - step); player.currentTime = state.start; }
+	else if (state.dragging === 'end') { state.end = Math.max(t, state.start + step); player.currentTime = state.end; }
+	else player.currentTime = t;
+	renderSection();
+});
+$('timeline').addEventListener('pointerup', () => { if (state.dragging && state.dragging !== 'seek') commitSection(); state.dragging = null; });
+for (const which of ['start', 'end']) {
+	const input = $(which + '-text');
+	input.addEventListener('change', () => { const v = parseClock(input.value); if (v != null) state[which] = v; commitSection(); });
+	input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+}
+$('set-start').onclick = () => { state.start = player.currentTime; commitSection(); };
+$('set-end').onclick = () => { state.end = player.currentTime; commitSection(); };
+$('whole').onclick = () => { state.start = 0; state.end = selected().duration; commitSection(); };
+$('play-sel').onclick = () => { player.currentTime = state.start; state.playSection = true; player.play(); };
+document.addEventListener('keydown', (event) => {
+	const item = selected();
+	if (!item || state.tab !== 'upscale' || $('viewer').open || ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName) || event.ctrlKey || event.altKey || event.metaKey) return;
+	const step = 1 / item.fps;
+	if (event.key === 'i' || event.key === 'I') { state.start = player.currentTime; commitSection(); }
+	else if (event.key === 'o' || event.key === 'O') { state.end = player.currentTime; commitSection(); }
+	else if (event.key === ' ') { player.paused ? player.play() : player.pause(); }
+	else if (event.key === 'ArrowRight') { player.pause(); player.currentTime = Math.min(player.currentTime + step, item.duration); }
+	else if (event.key === 'ArrowLeft') { player.pause(); player.currentTime = Math.max(player.currentTime - step, 0); }
+	else if (event.key === 'b' || event.key === 'B') setCompare(!compare.on);
+	else return;
+	event.preventDefault();
+});
+
+// crop (one rectangle for the whole video, in source pixels)
+const cropLayer = $('crop-layer'), cropRect = $('crop-rect');
+function cropMode() { return document.querySelector('#crop-mode .active')?.dataset.mode || 'auto'; }
+function setCropMode(mode, save = true) {
+	for (const b of document.querySelectorAll('#crop-mode button')) b.classList.toggle('active', b.dataset.mode === mode);
+	const item = selected();
+	if (mode === 'custom' && !state.crop && item) state.crop = { x: 0, y: 0, w: item.width, h: item.height };
+	if (mode !== 'custom') state.cropEditing = false;
+	renderCrop();
+	if (save) saveItem({ crop: cropSetting() });
+}
+$('crop-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.disabled) setCropMode(b.dataset.mode); });
+function videoBox() {
+	const item = selected(), ew = player.clientWidth, eh = player.clientHeight;
+	const scale = Math.min(ew / item.width, eh / item.height);
+	return { left: player.offsetLeft + (ew - item.width * scale) / 2, top: player.offsetTop + (eh - item.height * scale) / 2, width: item.width * scale, height: item.height * scale, scale };
+}
+function evenCrop() {
+	const c = state.crop, item = selected(); if (!c || !item) return null;
+	const x = Math.max(0, Math.round(c.x / 2) * 2), y = Math.max(0, Math.round(c.y / 2) * 2);
+	return { x, y, w: Math.min(Math.round(c.w / 2) * 2, Math.floor((item.width - x) / 2) * 2), h: Math.min(Math.round(c.h / 2) * 2, Math.floor((item.height - y) / 2) * 2) };
+}
+function cropSetting() { const mode = cropMode(), c = evenCrop(); return mode === 'custom' && c ? `${c.w}:${c.h}:${c.x}:${c.y}` : mode; }
+function renderCrop() {
+	const item = selected(); if (!item) return;
+	const box = videoBox();
+	for (const layer of [cropLayer, $('compare-layer')]) Object.assign(layer.style, { left: box.left + 'px', top: box.top + 'px', width: box.width + 'px', height: box.height + 'px' });
+	const mode = cropMode(), c = state.crop, show = mode === 'custom' && c;
+	cropRect.hidden = !show;
+	if (show) Object.assign(cropRect.style, { left: c.x * box.scale + 'px', top: c.y * box.scale + 'px', width: c.w * box.scale + 'px', height: c.h * box.scale + 'px' });
+	const even = evenCrop(), all = !!state.data?.settings.crop_all;
+	for (const b of document.querySelectorAll('#crop-scope button')) b.classList.toggle('active', (b.dataset.scope === 'all') === all);
+	if (!$('crop-info').querySelector('.spinner')) {
+		let text = mode === 'custom' && even ? `${even.w}×${even.h} at ${even.x},${even.y}` : mode === 'auto' ? 'black borders removed automatically' : 'whole picture';
+		if (all) {
+			const others = state.items.filter(i => i !== item && i.status !== 'running' && i.status !== 'done');
+			const resized = mode === 'custom' ? others.filter(i => i.width !== item.width || i.height !== item.height).length : 0;
+			text += item.status === 'done' ? ' · finished with this crop; a change here goes to all videos'
+				: ` · same for all videos${resized ? `, fitted to the size of ${resized} other${resized > 1 ? 's' : ''}` : ''}`;
+		}
+		$('crop-info').textContent = text;
+	}
+	$('crop-edit').classList.toggle('on', state.cropEditing);
+	$('crop-edit').textContent = state.cropEditing ? 'Done' : 'Draw on video';
+	cropLayer.classList.toggle('editing', state.cropEditing);
+}
+function setCrop(c, save) {
+	const item = selected(), min = 16;
+	c.w = Math.max(min, Math.min(c.w, item.width)); c.h = Math.max(min, Math.min(c.h, item.height));
+	c.x = Math.max(0, Math.min(c.x, item.width - c.w)); c.y = Math.max(0, Math.min(c.y, item.height - c.h));
+	state.crop = c;
+	for (const b of document.querySelectorAll('#crop-mode button')) b.classList.toggle('active', b.dataset.mode === 'custom');
+	renderCrop();
+	if (save) saveItem({ crop: cropSetting() });
+}
+function cropPoint(event) { const rect = cropLayer.getBoundingClientRect(), scale = videoBox().scale; return { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale }; }
+let cropDrag = null;
+cropLayer.addEventListener('pointerdown', (event) => {
+	if (!state.cropEditing) return;
+	const p = cropPoint(event), c = state.crop && cropMode() === 'custom' ? { ...state.crop } : null;
+	const corner = [...event.target.classList].find(name => ['nw', 'ne', 'sw', 'se'].includes(name));
+	cropDrag = corner && c ? { kind: corner, start: p, crop: c } : event.target === cropRect && c ? { kind: 'move', start: p, crop: c } : { kind: 'new', start: p };
+	try { cropLayer.setPointerCapture(event.pointerId); } catch {}
+	event.preventDefault();
+});
+cropLayer.addEventListener('pointermove', (event) => {
+	if (!cropDrag) return;
+	const p = cropPoint(event), d = cropDrag, dx = p.x - d.start.x, dy = p.y - d.start.y;
+	if (d.kind === 'new') setCrop({ x: Math.min(p.x, d.start.x), y: Math.min(p.y, d.start.y), w: Math.abs(dx), h: Math.abs(dy) });
+	else if (d.kind === 'move') setCrop({ ...d.crop, x: d.crop.x + dx, y: d.crop.y + dy });
+	else {
+		let { x, y, w, h } = d.crop;
+		if (d.kind.includes('w')) { x += dx; w -= dx; } else w += dx;
+		if (d.kind.includes('n')) { y += dy; h -= dy; } else h += dy;
+		if (w < 16) { if (d.kind.includes('w')) x -= 16 - w; w = 16; }
+		if (h < 16) { if (d.kind.includes('n')) y -= 16 - h; h = 16; }
+		setCrop({ x, y, w, h });
+	}
+});
+cropLayer.addEventListener('pointerup', () => { if (cropDrag) saveItem({ crop: cropSetting() }); cropDrag = null; });
+$('crop-edit').onclick = () => {
+	const item = selected();
+	state.cropEditing = !state.cropEditing;
+	if (state.cropEditing && (!state.crop || cropMode() !== 'custom')) setCrop(state.crop || { x: 0, y: 0, w: item.width, h: item.height }, true);
+	renderCrop();
+};
+$('crop-detect').onclick = async () => {
+	$('crop-detect').disabled = true; $('crop-info').innerHTML = '<span class="spinner"></span> analysing…';
+	try { const area = await api('/api/detect-crop', { id: state.selected }); $('crop-info').textContent = ''; setCrop(area, true); }
+	catch (error) { $('crop-info').textContent = 'Could not detect: ' + error.message; }
+	finally { $('crop-detect').disabled = false; }
+};
+$('crop-scope').addEventListener('click', async (event) => {
+	const button = event.target.closest('button'), item = selected();
+	if (!button || button.disabled || !item || !state.data) return;
+	const all = button.dataset.scope === 'all';
+	if (all === !!state.data.settings.crop_all) return;
+	try {
+		await flushItemSave();   // the crop as it is on screen is the one that goes to all videos
+		const { count } = await api('/api/queue/crop-all', { id: item.id, all });
+		await refresh();
+		toast(all ? `This crop is now used for ${count ? `${count} other video${count > 1 ? 's' : ''} and ` : ''}videos you add later` : 'Each video keeps its crop and can now be changed on its own');
+	} catch (error) { toast(error.message); }
+});
+player.addEventListener('loadedmetadata', renderCrop);
+window.addEventListener('resize', renderCrop);
+new ResizeObserver(renderCrop).observe(player);
+
+// brightness comparison: the server renders the paused frame at every Brightness setting with the upscaler's own
+// filter; the original is left of the divider, the chosen brightness right of it, so moving the slider is instant
+const compare = { on: false, frame: null, key: null, split: 0.5, timer: null, dragging: false };
+const compareLayer = $('compare-layer');
+function setCompare(on) {
+	compare.on = on && !!selected();
+	$('bright-compare').classList.toggle('on', compare.on);
+	$('bright-compare').textContent = compare.on ? 'Close comparison' : 'Compare on this frame';
+	clearTimeout(compare.timer);
+	if (!compare.on) { compare.key = null; compareLayer.hidden = true; $('bright-info').textContent = 'same setting for all videos'; return; }
+	player.pause();
+	loadCompareFrame();
+}
+async function loadCompareFrame() {
+	clearTimeout(compare.timer);
+	const item = selected();
+	if (!compare.on || !item || player.readyState < 1 || !player.paused) return;
+	const id = item.id, time = player.currentTime, key = `${id}@${time.toFixed(3)}`;
+	if (compare.frame && compare.frame.key === key) { showCompare(); return; }
+	if (compare.key === key) return;   // already on its way
+	compare.key = key;
+	compareLayer.hidden = true;
+	$('bright-info').innerHTML = '<span class="spinner"></span> getting this frame…';
+	try {
+		const result = await api('/api/brightness', { id, time });
+		const image = new Image();
+		await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error('the picture did not load')); image.src = media(result.image); });
+		if (compare.key !== key) return;   // another frame was asked for meanwhile
+		compare.frame = { key, image, gammas: result.gammas, time: result.time };
+		showCompare();
+	} catch (error) {
+		if (compare.key === key) { compare.key = null; $('bright-info').textContent = 'Could not get this frame: ' + error.message; }
+	}
+}
+function showCompare() {
+	if (!compare.on || !compare.frame || !player.paused) return;
+	compareLayer.hidden = false;
+	$('bright-info').textContent = `frame at ${clock(compare.frame.time, 2)} · drag the divider, pick another frame on the timeline`;
+	renderCrop();
+	drawCompare();
+}
+function drawCompare() {
+	const frame = compare.frame;
+	if (!frame || compareLayer.hidden) return;
+	const canvas = $('compare-canvas'), count = frame.gammas.length;
+	const width = frame.image.naturalWidth, height = frame.image.naturalHeight / count;
+	if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+	const tile = (g) => frame.gammas.reduce((best, value, index) => Math.abs(value - g) < Math.abs(frame.gammas[best] - g) ? index : best, 0);
+	const gamma = +$('gamma').value, split = Math.round(compare.split * width), context = canvas.getContext('2d');
+	// whole pixels copied 1:1 from the stacked picture; only the finished canvas is scaled, like the video
+	context.drawImage(frame.image, 0, tile(1) * height, width, height, 0, 0, width, height);
+	if (split < width) context.drawImage(frame.image, split, tile(gamma) * height, width - split, height, split, 0, width - split, height);
+	$('compare-line').style.left = compare.split * 100 + '%';
+	$('compare-tag').textContent = 'Brightness ' + gamma.toFixed(2);
+	compareLayer.querySelector('.compare-tag.left').hidden = compare.split < 0.15;
+	$('compare-tag').hidden = compare.split > 0.85;
+}
+function moveSplit(event) {
+	const rect = compareLayer.getBoundingClientRect();
+	compare.split = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+	drawCompare();
+}
+compareLayer.addEventListener('pointerdown', (event) => { compare.dragging = true; moveSplit(event); try { compareLayer.setPointerCapture(event.pointerId); } catch {} event.preventDefault(); });
+compareLayer.addEventListener('pointermove', (event) => { if (compare.dragging) moveSplit(event); });
+compareLayer.addEventListener('pointerup', () => { compare.dragging = false; });
+compareLayer.addEventListener('pointercancel', () => { compare.dragging = false; });
+player.addEventListener('play', () => { if (compare.on) { compareLayer.hidden = true; $('bright-info').textContent = 'pause to compare'; } });
+player.addEventListener('seeking', () => { if (compare.on) compareLayer.hidden = true; });
+for (const name of ['pause', 'seeked', 'loadeddata']) player.addEventListener(name, () => { if (compare.on) { clearTimeout(compare.timer); compare.timer = setTimeout(loadCompareFrame, 200); } });
+$('bright-compare').onclick = () => setCompare(!compare.on);
+$('bright-gamma').addEventListener('input', () => { $('gamma').value = $('bright-gamma').value; scheduleSave(); drawCompare(); });
+$('gamma').addEventListener('input', () => { $('bright-gamma').value = $('gamma').value; drawCompare(); });
+$('gamma-compare').onclick = () => {
+	if (!selected()) { toast('Add a video to the queue first'); return; }
+	setCompare(true);
+	$('player-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+// ---------------------------------------------------------------- settings
+function segValue(id) { return document.querySelector(`#${id} .active`)?.dataset.value; }
+function setSeg(id, value) { for (const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('active', b.dataset.value === String(value)); }
+for (const id of ['height', 'motion', 'size']) $(id).addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { setSeg(id, b.dataset.value); scheduleSave(); } });
+$('format').addEventListener('change', scheduleSave);
+
+// file size: measured expectations come from the server (shrink.py EXPECTED)
+const COMPAT = {
+	av1: 'AV1 plays on Windows 10/11, Android, Mac and in browsers; on iPhones only from the iPhone 15 Pro.',
+	h265: 'H.265 plays on all iPhones and Macs and most phones and TVs; on Windows it may need the HEVC extension (or VLC).',
+	h264: 'H.264 plays everywhere, also on old phones, TVs and Windows players.'
+};
+function meter(vmaf) {
+	const bars = vmaf >= 97 ? 4 : vmaf >= 93 ? 3 : vmaf >= 88 ? 2 : 1;
+	return `<span class="meter ${bars === 3 ? 'mid' : bars <= 2 ? 'low' : ''}" title="VMAF ${vmaf}">${[1, 2, 3, 4].map(i => `<i class="${i <= bars ? 'on' : ''}"></i>`).join('')}</span>`;
+}
+function expected(quality, format) { return state.data && state.data.size_table.expected[`${quality}-${format}`]; }
+function renderSizeHint() {
+	const size = segValue('size') || 'original', format = $('format').value;
+	$('format-field').hidden = size === 'original';
+	if (size === 'original') { $('size-hint').innerHTML = 'Largest files: about 9 Mbit/s at 1080p (a 27 s video ≈ 31 MB). Best if you want to edit further.'; return; }
+	const e = expected(size, format); if (!e) return;
+	$('size-hint').innerHTML = `${meter(e.vmaf)}<b>about ${e.reduction}% smaller</b> · VMAF ${e.vmaf}: ${e.label}<br>${COMPAT[format]}`;
+}
+function targetFps() {
+	const preset = $('fps-preset').value;
+	if (preset === 'custom') { const v = parseFloat($('fps-custom').value); return v > 0 ? v : null; }
+	return preset ? parseFloat(preset) : null;
+}
+function collectSettings() {
+	return {
+		person: $('person').value, identity: +$('identity').value, height: +segValue('height'), fps: targetFps(), motion: segValue('motion'),
+		smooth: $('smooth').checked, denoise: $('denoise').value, gamma: +$('gamma').value, compare: $('compare').checked, audio: $('audio').checked,
+		model: $('model').value, batch: +$('batch').value, enhance: +$('enhance').value, face_enhancer: $('face-enhancer').value, expression: $('expression').checked,
+		merge: $('merge').checked, merge_name: $('merge-name').value.trim(),
+		size: segValue('size') || 'original', format: $('format').value
+	};
+}
+function applySettings(s) {
+	$('person').value = s.person || ''; $('identity').value = s.identity; setSeg('height', s.height); setSeg('motion', s.motion);
+	const preset = s.fps ? (['24', '25', '30', '50', '60'].includes(String(s.fps)) ? String(s.fps) : 'custom') : '';
+	$('fps-preset').value = preset; $('fps-custom').hidden = preset !== 'custom'; if (preset === 'custom') $('fps-custom').value = s.fps;
+	$('smooth').checked = s.smooth; $('denoise').value = s.denoise; $('gamma').value = $('bright-gamma').value = s.gamma; $('compare').checked = s.compare; $('audio').checked = s.audio !== false;
+	$('model').value = s.model; $('batch').value = String(s.batch); $('enhance').value = s.enhance; $('face-enhancer').value = s.face_enhancer; $('expression').checked = s.expression;
+	$('merge').checked = s.merge; $('merge-name').value = s.merge_name || ''; $('merge-name').hidden = !s.merge;
+	setSeg('size', s.size || 'original'); $('format').value = s.format || 'av1';
+	labelSliders();
+}
+function labelSliders() {
+	renderSizeHint();
+	const g = +$('gamma').value, i = +$('identity').value;
+	$('gamma-value').textContent = '· ' + ($('bright-value').textContent = g === 1 ? 'unchanged' : g > 1 ? `brighter (${g.toFixed(2)})` : `darker (${g.toFixed(2)})`);
+	$('identity-value').textContent = `· ${i.toFixed(2)}, ${i < 0.48 ? 'closer to the video' : i > 0.52 ? 'past the photos' : 'like the photos'}`;
+	$('enhance-value').textContent = `· ${$('enhance').value}%`;
+}
+let saveTimer;
+function scheduleSave() { labelSliders(); clearTimeout(saveTimer); saveTimer = setTimeout(saveSettingsNow, 350); }
+async function saveSettingsNow() { clearTimeout(saveTimer); try { await api('/api/settings', collectSettings()); } catch (error) { toast(error.message); } }
+for (const id of ['person', 'denoise', 'model', 'batch', 'face-enhancer']) $(id).addEventListener('change', scheduleSave);
+for (const id of ['smooth', 'compare', 'audio', 'expression']) $(id).addEventListener('change', scheduleSave);
+for (const id of ['identity', 'gamma', 'enhance']) $(id).addEventListener('input', scheduleSave);
+$('fps-preset').onchange = () => { $('fps-custom').hidden = $('fps-preset').value !== 'custom'; scheduleSave(); };
+$('fps-custom').oninput = scheduleSave;
+
+// ---------------------------------------------------------------- progress
+function renderProgress(data) {
+	const b = data.batch, job = data.job, t = Date.now() / 1000;
+	const card = $('progress-card');
+	if (!b || (!b.running && !b.paused && state.dismissedBatch === b.finished)) { card.hidden = true; return; }
+	card.hidden = false;
+	const merging = b.merge && b.merge.status === 'running', active = b.running || b.paused;
+	if (b.paused) {
+		$('progress-title').textContent = `Paused · video ${b.index} of ${b.total}`;
+		$('progress-sub').textContent = 'the GPU is free · Resume continues where it stopped';
+	} else if (b.running) {
+		$('progress-title').textContent = merging ? 'Merging all videos' : `Processing video ${b.index} of ${b.total}`;
+		$('progress-sub').textContent = `${b.done} done${b.failed ? ` · ${b.failed} failed` : ''}`;
+	} else {
+		$('progress-title').textContent = b.stopped ? 'Queue stopped' : b.failed ? 'Queue finished with problems' : 'Queue finished';
+		$('progress-sub').textContent = `${b.done} done${b.failed ? ` · ${b.failed} failed` : ''} · took ${human(b.elapsed)}`;
+	}
+	const bar = $('batch-bar');
+	bar.className = 'bar' + (b.paused ? ' paused' : !b.running ? (b.failed || b.stopped ? ' bad' : ' good') : '');
+	bar.firstElementChild.style.width = (active ? b.percent : 100) + '%';
+	$('stat-percent').textContent = active ? b.percent.toFixed(1) + '%' : '100%';
+	$('stat-elapsed').textContent = clock(b.running ? b.elapsed + (t - state.dataTime) : b.elapsed);
+	$('stat-left').textContent = b.running ? clock(Math.max(b.remaining - (t - state.dataTime), 0)) : b.paused ? clock(b.remaining) : '–';
+	$('stat-eta').textContent = b.running && b.eta ? timeOfDay(b.eta) : b.paused ? 'paused' : b.finished ? 'done ' + timeOfDay(b.finished) : '–';
+	$('progress-pause').hidden = !(b.running && !merging) && !b.paused;
+	$('progress-pause').textContent = b.paused ? 'Resume' : 'Pause';
+	const current = data.items.find(i => i.id === b.current);
+	$('current').hidden = !current;
+	if (current && job) {
+		$('current-thumb').style.backgroundImage = current.thumb ? `url('${media(current.thumb)}')` : '';
+		$('current-name').textContent = current.name;
+		$('current-phase').textContent = `${b.paused ? 'Paused at step' : 'Step'} ${job.phase_index || 1} of ${job.phase_count || '…'} · ${job.phase_label || 'Starting'}${job.detail ? ' — ' + job.detail : ''}`;
+		$('current-bar').style.width = (job.phase_percent || 0) + '%';
+	}
+	const icons = { done: '✓ ', cached: '↺ ', skipped: '– ', running: '● ', pending: '' };
+	$('steps').innerHTML = current && job && job.phases ? job.phases.map(p => `<div class="step ${p.state}">${icons[p.state] || ''}${esc(p.label)}${p.state === 'cached' ? '<br><span class="muted">reused</span>' : p.state === 'skipped' ? '<br><span class="muted">not needed</span>' : ''}</div>`).join('') : '';
+	$('steps').hidden = !current;
+	const m = b.merge;
+	$('merge-row').hidden = !m;
+	if (m) {
+		$('merge-name-label').textContent = 'Merged video · ' + m.output.split(/[\\/]/).pop();
+		$('merge-detail').textContent = m.status === 'running' ? `Joining ${m.parts} videos — ${m.detail}` : m.status === 'done' ? `Done · ${m.parts} videos` : m.status === 'error' ? 'Failed: ' + m.detail : 'Stopped';
+		$('merge-bar').style.width = (m.fraction * 100) + '%';
+	}
+	const failedItem = !active && data.items.find(i => b.failed && i.status === 'error');
+	$('progress-error').hidden = !(job && job.status === 'error' && b.running) && !failedItem;
+	if (failedItem) $('progress-error').textContent = `${failedItem.name}: ${failedItem.message || 'failed'}`;
+	$('progress-dismiss').hidden = active;
+}
+$('progress-dismiss').onclick = () => { state.dismissedBatch = state.data.batch.finished; renderProgress(state.data); };
+$('toggle-log').onclick = () => { state.logOpen = !state.logOpen; $('log').hidden = !state.logOpen; $('toggle-log').textContent = state.logOpen ? 'Hide log' : 'Show log'; refreshLog(); };
+async function refreshLog() {
+	if (!state.logOpen) return;
+	const { lines } = await api('/api/log');
+	const log = $('log'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
+	log.textContent = lines.join('\n') || '(no output yet)';
+	if (atBottom) log.scrollTop = log.scrollHeight;
+}
+
+// ---------------------------------------------------------------- results and viewer
+function renderResults(results) {
+	const box = $('results');
+	const key = JSON.stringify(results);
+	if (box.dataset.key === key) return;
+	box.dataset.key = key;
+	if (!results.length) { box.innerHTML = '<span class="muted small">Finished videos appear here.</span>'; return; }
+	box.innerHTML = results.map((r, i) => `<div class="result${r.merged ? ' merged' : ''}${r.edited ? ' edited' : ''}" data-i="${i}">
+		<div style="min-width:0"><div class="name">${r.merged ? '<span class="chip running" style="margin-right:6px">Merged</span>' : ''}${r.edited ? '<span class="chip done" style="margin-right:6px" title="Made in the Edit tab">Edited</span>' : ''}${r.shrink ? `<span class="badge" style="margin-right:6px">${esc(FORMAT_LABEL[r.shrink.format] || r.shrink.format)} · ${esc(QUALITY_LABEL[r.shrink.quality] || r.shrink.quality)}</span>` : ''}${esc(r.name)}</div>
+		<div class="sub num">${new Date(r.time * 1000).toLocaleString()} · <b style="color:var(--text);font-weight:600">${mb(r.size)}</b>${sizeLine(r)}</div></div>
+		<div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-act="play">${ICON.play} Play</button><button class="btn sm quiet" data-act="edit" title="Open in the Edit tab: trim, join, speed up">Edit</button>${r.shrink ? '' : '<button class="btn sm quiet" data-act="shrink" title="Make a smaller copy for sharing">Smaller…</button>'}<button class="btn sm quiet" data-act="reveal">Show</button></div></div>`).join('');
+	box.onclick = (e) => {
+		const row = e.target.closest('.result'), act = e.target.closest('[data-act]')?.dataset.act; if (!row || !act) return;
+		const r = results[+row.dataset.i];
+		if (act === 'play') openViewer(r.name, r.video, r.compare);
+		else if (act === 'edit') editorLoaded() ? edOpenVideo(r.video) : showTab('edit');
+		else if (act === 'shrink') openShrink([ r.video ]);
+		else api('/api/reveal', { path: r.video });
+	};
+}
+const QUALITY_LABEL = { near: 'Near lossless', balanced: 'Balanced', small: 'Small' };
+const FORMAT_LABEL = { av1: 'AV1', h265: 'H.265', h264: 'H.264' };
+const mb = (bytes) => bytes >= 1e9 ? (bytes / 1e9).toFixed(2) + ' GB' : (bytes / 1e6).toFixed(bytes < 1e7 ? 2 : 1) + ' MB';
+function sizeLine(r) {
+	const s = r.shrink; if (!s) return '';
+	if (s.vmaf != null) return ` · <b style="color:var(--good)">${s.reduction}% smaller</b> than ${mb(s.source_size)} · ${meter(s.vmaf)}VMAF ${s.vmaf}: ${esc(s.label)}`;
+	return ` · ≈ ${s.expected_reduction}% smaller than full quality · ${meter(s.expected_vmaf)}${esc(s.label)}`;
+}
+
+// ---------------------------------------------------------------- make smaller
+function renderShrinkJobs(jobs) {
+	const active = jobs.filter(j => j.status === 'queued' || j.status === 'running' || (j.status === 'error'));
+	$('shrink-jobs').hidden = !active.length;
+	$('shrink-stop').hidden = !active.some(j => j.status !== 'error');
+	$('shrink-clear').hidden = !active.some(j => j.status === 'error');
+	const html = active.map(j => `<div class="job"><div style="min-width:0"><div class="q-name">${esc(j.name)} <span class="muted small">→ ${FORMAT_LABEL[j.format]} · ${QUALITY_LABEL[j.quality]}</span></div>
+		<div class="small muted">${j.status === 'running' ? `${j.detail === 'measuring quality' ? 'Measuring quality' : 'Making smaller'} · ${Math.round(j.fraction * 100)}%` : j.status === 'queued' ? 'Waiting' : '<span style="color:var(--bad)">Failed: ' + esc(j.error) + '</span>'}</div>
+		${j.status === 'running' ? `<div class="bar thin"><div style="width:${j.fraction * 100}%"></div></div>` : ''}</div>
+		<span class="chip ${j.status === 'running' ? 'running' : j.status === 'error' ? 'error' : ''}">${j.status === 'running' ? 'Working' : j.status === 'queued' ? 'Queued' : 'Failed'}</span></div>`).join('');
+	if ($('shrink-job-rows').dataset.html !== html) { $('shrink-job-rows').innerHTML = html; $('shrink-job-rows').dataset.html = html; }
+}
+$('shrink-stop').onclick = () => api('/api/shrink/stop', {});
+$('shrink-clear').onclick = async () => { await api('/api/shrink/clear', {}); refresh(); };
+const shrinkState = { paths: [], extra: [] };
+function shrinkCandidates() {
+	const results = (state.data ? state.data.results : []).filter(r => !r.shrink).map(r => ({ path: r.video, name: r.name, size: r.size }));
+	return results.concat(shrinkState.extra.filter(e => !results.some(r => r.path === e.path)));
+}
+function openShrink(preselect) {
+	shrinkState.paths = [ ...preselect ];
+	setSeg('shrink-quality', segValue('size') && segValue('size') !== 'original' ? segValue('size') : 'balanced');
+	$('shrink-format').value = $('format').value || 'av1';
+	renderShrinkDialog();
+	$('shrink-dialog').showModal();
+}
+function renderShrinkDialog() {
+	const candidates = shrinkCandidates();
+	$('shrink-list').innerHTML = candidates.length ? candidates.map((c, i) => `<label><input type="checkbox" data-i="${i}" ${shrinkState.paths.includes(c.path) ? 'checked' : ''}><span class="name" title="${esc(c.path)}">${esc(c.name)}</span><span class="small muted num">${mb(c.size)}</span><span></span></label>`).join('')
+		: '<div class="q-empty">No finished videos yet. Use “Add other videos…”.</div>';
+	$('shrink-list').onchange = (e) => {
+		const c = candidates[+e.target.dataset.i]; if (!c) return;
+		shrinkState.paths = e.target.checked ? [ ...shrinkState.paths, c.path ] : shrinkState.paths.filter(p => p !== c.path);
+		renderShrinkEstimate();
+	};
+	renderShrinkEstimate();
+}
+function renderShrinkEstimate() {
+	const quality = segValue('shrink-quality'), format = $('shrink-format').value;
+	const selected = shrinkCandidates().filter(c => shrinkState.paths.includes(c.path));
+	const rows = Object.keys(QUALITY_LABEL).map(q => {
+		const e = expected(q, format);
+		return `<tr${q === quality ? ' style="background:var(--accent-soft)"' : ''}><td>${q === quality ? '<b>' : ''}${QUALITY_LABEL[q]}${q === quality ? '</b>' : ''}</td><td class="num">${e.reduction}% smaller</td><td>${meter(e.vmaf)}VMAF ${e.vmaf}</td><td>${esc(e.label)}</td></tr>`;
+	}).join('');
+	$('shrink-table').innerHTML = `<tr><th>Level (${FORMAT_LABEL[format]})</th><th class="num">Size</th><th>Quality</th><th>What you see</th></tr>${rows}`;
+	$('shrink-compat').textContent = COMPAT[format];
+	const e = expected(quality, format), total = selected.reduce((t, c) => t + c.size, 0);
+	$('shrink-summary').innerHTML = selected.length ? `${selected.length} video${selected.length > 1 ? 's' : ''} · ${mb(total)} → about <b>${mb(total * (1 - e.reduction / 100))}</b>` : 'Select one or more videos';
+	$('shrink-start').disabled = !selected.length;
+}
+$('shrink-quality').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { setSeg('shrink-quality', b.dataset.value); renderShrinkEstimate(); } });
+$('shrink-format').onchange = renderShrinkEstimate;
+$('shrink-open').onclick = () => openShrink([]);
+$('shrink-close').onclick = () => $('shrink-dialog').close();
+$('shrink-all').onclick = () => { shrinkState.paths = shrinkCandidates().map(c => c.path); renderShrinkDialog(); };
+$('shrink-other').onclick = async () => {
+	const { files } = await api('/api/browse', { mode: 'files', pick: true });
+	for (const { path, size } of files) {
+		if (!shrinkState.extra.some(e => e.path === path)) shrinkState.extra.push({ path, name: path.split(/[\\/]/).pop(), size });
+		if (!shrinkState.paths.includes(path)) shrinkState.paths.push(path);
+	}
+	renderShrinkDialog();
+};
+$('shrink-start').onclick = async () => {
+	try {
+		const { added } = await api('/api/shrink', { paths: shrinkState.paths, quality: segValue('shrink-quality'), format: $('shrink-format').value });
+		$('shrink-dialog').close();
+		toast(`Making ${added} video${added === 1 ? '' : 's'} smaller — progress is shown under Results`);
+		refresh();
+	} catch (error) { toast(error.message); }
+};
+function openViewer(name, video, compare) {
+	const dialog = $('viewer');
+	$('viewer-name').textContent = name;
+	$('viewer-tabs').hidden = !compare;
+	const show = (tab) => {
+		for (const b of document.querySelectorAll('#viewer-tabs button')) b.classList.toggle('active', b.dataset.tab === tab);
+		$('viewer-video').src = media(tab === 'compare' ? compare : video);
+		$('viewer-video').play().catch(() => {});
+	};
+	$('viewer-tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) show(b.dataset.tab); };
+	$('viewer-reveal').onclick = () => api('/api/reveal', { path: video });
+	show('video');
+	dialog.showModal();
+}
+$('viewer-close').onclick = () => $('viewer').close();
+$('viewer').addEventListener('close', () => { $('viewer-video').pause(); $('viewer-video').removeAttribute('src'); });
+$('viewer').addEventListener('click', (e) => { if (e.target === $('viewer')) $('viewer').close(); });
+
+// ---------------------------------------------------------------- polling
+function renderTop(data) {
+	const b = data.batch, pill = $('top-status');
+	pill.className = 'status-pill' + (data.running ? ' running' : data.paused ? ' paused' : b && b.finished && !b.stopped ? ' done' : '');
+	$('top-status-text').textContent = data.running
+		? (b.merge && b.merge.status === 'running' ? 'Merging' : `Processing ${b.index} of ${b.total}`) + (b.eta ? ` · ready at ${timeOfDay(b.eta)}` : '')
+		: data.paused ? `Paused${b ? ` · video ${b.index} of ${b.total}` : ''} · GPU free`
+		: state.items.some(i => i.status === 'queued') ? `${state.items.filter(i => i.status === 'queued').length} queued` : 'Idle';
+	$('settings-note').textContent = data.running ? 'Changes apply to videos that haven\'t started yet'
+		: data.paused ? 'Changes apply when you resume; the steps they affect are done again' : 'Applies to every video in the queue';
+}
+let first = true;
+async function refresh() {
+	try {
+		const data = await api('/api/state');
+		state.data = data; state.dataTime = Date.now() / 1000;
+		state.items = data.items;
+		if (first) {
+			const person = $('person');
+			person.innerHTML = '<option value="">None – upscale only</option>' + data.people.map(p => `<option value="${esc(p.name)}">${esc(p.name)} · ${p.photos} photos</option>`).join('');
+			const names = { '7b': '7B (best)', '7b-sharp': '7B sharp', '3b': '3B (faster)' };
+			$('model').innerHTML = data.models.map(m => `<option value="${m}">${names[m] || m}</option>`).join('');
+			applySettings(data.settings);
+			if (!data.rife) for (const o of $('fps-preset').options) if (o.value) o.disabled = true;
+			first = false;
+		}
+		if (state.selected && !selected()) state.selected = null;
+		if (!state.selected && state.items.length) state.selected = (state.items.find(i => i.status === 'running' || i.status === 'paused') || state.items.find(i => i.status === 'queued') || state.items[0]).id;
+		renderQueue();
+		renderEditor(false);
+		renderProgress(data);
+		renderResults(data.results);
+		renderShrinkJobs(data.shrink_jobs || []);
+		renderTop(data);
+		if (state.loaded) $('update-banner').hidden = 'edit' in data && editorLoaded();
+		if (editorLoaded()) edOnState(data);
+		refreshLog();
+	} catch (error) {
+		$('top-status-text').textContent = 'No connection — is the upscaler window still open?';
+	}
+}
+// ---------------------------------------------------------------- tabs (the Edit tab itself is ui/editor.js)
+// a server started before an update serves the new page but not the editor: the banner asks for a restart
+const editorLoaded = () => typeof edTabShown === 'function';
+function showTab(tab) {
+	if (tab === 'edit' && !editorLoaded()) $('update-banner').hidden = false;
+	if (tab !== 'edit' || !editorLoaded()) tab = 'upscale';
+	state.tab = tab;
+	for (const b of document.querySelectorAll('#tabs button')) { b.classList.toggle('active', b.dataset.tab === tab); b.setAttribute('aria-selected', String(b.dataset.tab === tab)); }
+	$('upscale-tab').hidden = tab !== 'upscale';
+	$('edit-tab').hidden = tab !== 'edit';
+	try { localStorage.setItem('tab', tab); } catch {}
+	if (location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+	if (tab === 'edit') player.pause();
+	if (editorLoaded()) edTabShown(tab);
+}
+$('tabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
+window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+// after ui/editor.js has run (or failed to load)
+document.addEventListener('DOMContentLoaded', () => {
+	state.loaded = true;
+	showTab(location.hash.slice(1) || (() => { try { return localStorage.getItem('tab'); } catch { return null; } })() || 'upscale');
+});
+
+refresh();
+setInterval(refresh, 1000);
+setInterval(() => state.data && renderProgress(state.data), 250);
+</script>
+<script src="/editor.js"></script>
+</body>
+</html>

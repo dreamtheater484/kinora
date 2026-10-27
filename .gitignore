@@ -1,0 +1,22 @@
+# personal videos and everything derived from them
+/input/
+/output/
+/work/
+/projects/
+
+# reference photos of people stay on this PC (only the folder's README is shared)
+/refs/*
+!/refs/README.md
+
+# installed by install.ps1 on the first start (pinned versions, see install.ps1)
+/tools/seedvr2/
+/tools/facefusion/
+/tools/python/
+/tools/rife/
+/tools/.installed
+/models/
+
+# local tooling
+/.claude/
+__pycache__/
+*.pyc
