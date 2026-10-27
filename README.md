@@ -4,6 +4,22 @@ Kinora makes old home videos sharp again. It upscales low-resolution video (320�
 to 1080p, can keep a person's face true to reference photos, and has a video editor to trim, join,
 speed up and add texts. Everything runs offline on this PC.
 
+## Download
+
+**Kinora 0.9.0** · [all releases](https://github.com/dreamtheater484/kinora/releases)
+
+| System | Download | Then |
+|---|---|---|
+| **Windows 10/11** | [**Kinora-0.9.0-setup.exe**](https://github.com/dreamtheater484/kinora/releases/download/v0.9.0/Kinora-0.9.0-setup.exe) | run it, then start *Kinora* from the Start menu |
+| **Ubuntu 22.04+** | [**kinora_0.9.0_amd64.deb**](https://github.com/dreamtheater484/kinora/releases/download/v0.9.0/kinora_0.9.0_amd64.deb) | `sudo apt install ./kinora_0.9.0_amd64.deb`, then start *Kinora* from the app menu |
+
+You need an NVIDIA GPU. On Windows, first install git, uv and ffmpeg once:
+`winget install Git.Git astral-sh.uv Gyan.FFmpeg`. The first start downloads the tools and models
+(about 25 GB, only once); after that Kinora works without internet. Details are in
+[Installation](#installation).
+
+## How it works
+
 ```
 input ─► prep (section, crop, even timing, find real/damaged pictures) ─► RIFE in-between frames* ─► SeedVR2 ─► FaceFusion face lock ─► 1080p + audio
                                                                                                                    ▲
