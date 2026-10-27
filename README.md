@@ -32,7 +32,7 @@ that folder. Set `KINORA_DATA` to use another folder.
    winget install Git.Git astral-sh.uv Gyan.FFmpeg
    ```
 
-2. Download `Kinora-<version>-setup.exe` from the
+2. Download `Kinora-0.9.0-setup.exe` from the
    [releases](https://github.com/dreamtheater484/kinora/releases) and run it. It installs for your
    user only (no administrator rights) into `%LOCALAPPDATA%\Programs\Kinora`, with a
    Start-menu shortcut.
@@ -43,11 +43,11 @@ delete it too. Answer *No* to keep your videos and the 25 GB of downloads for a 
 
 ### Ubuntu 22.04 and newer
 
-Download `kinora_<version>_amd64.deb` from the
+Download `kinora_0.9.0_amd64.deb` from the
 [releases](https://github.com/dreamtheater484/kinora/releases) and install it:
 
 ```bash
-sudo apt install ./kinora_<version>_amd64.deb
+sudo apt install ./kinora_0.9.0_amd64.deb
 ```
 
 It installs the program into `/opt/kinora`, the `kinora` command and a *Kinora* entry in the app
@@ -73,18 +73,21 @@ apart by the `installed.txt` that the installers put next to `app.py` (see `path
 
 ### Building the installers
 
-A pushed `v*` tag makes GitHub Actions build both and attach them to the tag's release
-(`.github/workflows/release.yml`). Locally:
+Kinora's version is kept in one place, the `VERSION` file (now 0.9.0); the installers, the
+packages and the app (`/api/state`, and the line it prints on start) read it from there. Pushing
+the tag `v` + that version (`v0.9.0`) makes GitHub Actions build both installers and attach them
+to the tag's release (`.github/workflows/release.yml`); a tag that does not match `VERSION` builds
+nothing. Locally:
 
 ```bat
-ISCC /DAppVersion=1.0.0 packaging\windows\kinora.iss
+ISCC packaging\windows\kinora.iss
 ```
 
 ```bash
-KINORA_VERSION=1.0.0 nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+KINORA_VERSION=$(cat VERSION) nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
 ```
 
-Both write to `dist\`. The Inno Setup script needs Inno Setup 6. Build the `.deb` from a checkout
+Both write to `dist\` (`Kinora-0.9.0-setup.exe`, `kinora_0.9.0_amd64.deb`). The Inno Setup script needs Inno Setup 6. Build the `.deb` from a checkout
 with LF line endings, e.g. in WSL.
 
 ## Front end

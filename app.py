@@ -37,6 +37,8 @@ import merge  # noqa: E402
 import shrink  # noqa: E402
 import editor  # noqa: E402
 
+# the one place of Kinora's version (also read by the installers and the release workflow)
+VERSION = (ROOT / 'VERSION').read_text(encoding = 'utf-8').strip()
 HOST = '127.0.0.1'
 PORT = 8766
 UI_FILE = ROOT / 'ui' / 'index.html'
@@ -745,7 +747,7 @@ class Runner:
 			'items': items, 'settings': self.settings, 'running': running, 'paused': paused, 'batch': summary, 'job': state,
 			'people': people, 'models': list_models(), 'rife': upscale.RIFE_EXE.is_file(), 'results': list_results(),
 			'shrink_jobs': SHRINKER.snapshot() if SHRINKER else [], 'size_table': size_table(), 'edit': EDITOR.snapshot() if EDITOR else None,
-			'root': str(ROOT), 'data_dir': str(DATA), 'refs_dir': str(REFS_DIR), 'output_dir': str(OUTPUT_DIR), 'input_dir': str(INPUT_DIR)
+			'version': VERSION, 'root': str(ROOT), 'data_dir': str(DATA), 'refs_dir': str(REFS_DIR), 'output_dir': str(OUTPUT_DIR), 'input_dir': str(INPUT_DIR)
 		}
 
 
@@ -1249,7 +1251,7 @@ def annotate(result : dict) -> dict:
 # ---------------------------------------------------------------- http
 
 class Handler(BaseHTTPRequestHandler):
-	server_version = 'upscaler'
+	server_version = 'Kinora/' + VERSION
 
 	def log_message(self, format, *args) -> None:
 		pass
@@ -1539,7 +1541,7 @@ def main() -> None:
 	RUNNER = Runner()
 	SHRINKER = Shrinker()
 	url = 'http://{}:{}/'.format(HOST, PORT)
-	print('Kinora: ' + url)
+	print('Kinora {}: {}'.format(VERSION, url))
 	print('Keep this window open while you use it. Close it (or press Ctrl+C) to stop.')
 	if '--no-browser' not in sys.argv:
 		threading.Timer(0.5, webbrowser.open, [ url ]).start()

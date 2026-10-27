@@ -1,5 +1,6 @@
-# Builds Kinora's installers when a version tag (v1.2.3) is pushed, and attaches them to the GitHub release of that
-# tag: the Windows installer (Inno Setup, per user) and the Ubuntu package (.deb, nfpm). See packaging/.
+# Builds Kinora's installers when a version tag is pushed, and attaches them to the GitHub release of that tag: the
+# Windows installer (Inno Setup, per user) and the Ubuntu package (.deb, nfpm). See packaging/. The tag must be v plus
+# the version in the VERSION file (v0.9.0 for 0.9.0), or nothing is built.
 name: Release
 
 on:
@@ -10,16 +11,29 @@ permissions:
   contents: read
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: The tag must match VERSION
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match VERSION ($version): tag v$version, or change VERSION first."
+            exit 1
+          fi
+
   windows:
+    needs: version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
       - name: Install Inno Setup
         run: choco install innosetup --version 6.7.1 --no-progress -y
-      - name: Build the installer
+      - name: Build the installer (its version comes from VERSION)
         shell: pwsh
         run: |
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$($env:GITHUB_REF_NAME.TrimStart('v'))" packaging\windows\kinora.iss
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q packaging\windows\kinora.iss
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v7
         with:
@@ -28,6 +42,7 @@ jobs:
           if-no-files-found: error
 
   ubuntu:
+    needs: version
     runs-on: ubuntu-latest
     env:
       NFPM_URL: https://github.com/goreleaser/nfpm/releases/download/v2.48.0/nfpm_2.48.0_Linux_x86_64.tar.gz
@@ -42,7 +57,7 @@ jobs:
       - name: Build the package
         run: |
           mkdir -p dist
-          KINORA_VERSION="${GITHUB_REF_NAME#v}" "$RUNNER_TEMP/nfpm" package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+          KINORA_VERSION="$(tr -d '[:space:]' < VERSION)" "$RUNNER_TEMP/nfpm" package --config packaging/linux/nfpm.yaml --packager deb --target dist/
       - name: Check the package
         run: |
           dpkg-deb --info dist/*.deb

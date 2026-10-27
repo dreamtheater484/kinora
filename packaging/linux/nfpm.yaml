@@ -1,8 +1,9 @@
 # Kinora's Ubuntu package: the program in /opt/kinora, a launcher (kinora) and a menu entry. The tools and models
 # (about 25 GB) are not in it: install.sh downloads them on the first start, into ~/.local/share/kinora (paths.py).
 #
-# Build (nfpm 2), from a checkout of the repository with LF line endings:
-#   KINORA_VERSION=1.0.0 nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+# Build (nfpm 2), from a checkout of the repository with LF line endings; the version comes from the VERSION file:
+#   KINORA_VERSION=$(cat VERSION) nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+#   -> dist/kinora_0.9.0_amd64.deb
 name: kinora
 version: ${KINORA_VERSION}
 arch: amd64
@@ -48,6 +49,8 @@ contents:
     dst: /opt/kinora/download_models.py
   - src: ./README.md
     dst: /opt/kinora/README.md
+  - src: ./VERSION
+    dst: /opt/kinora/VERSION
   - src: ./refs/README.md
     dst: /opt/kinora/refs/README.md
   - src: ./tools/*.py

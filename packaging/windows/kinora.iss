@@ -3,10 +3,13 @@
 ; in it: install.ps1 downloads them on the first start, into the data folder %LOCALAPPDATA%\Kinora (paths.py).
 ;
 ; Build (Inno Setup 6), from the repository:
-;   ISCC /DAppVersion=1.0.0 packaging\windows\kinora.iss      -> dist\Kinora-1.0.0-setup.exe
+;   ISCC packaging\windows\kinora.iss      -> dist\Kinora-0.9.0-setup.exe
+; The version comes from the VERSION file (its one place); /DAppVersion=... overrides it for a test build.
 
 #ifndef AppVersion
-  #define AppVersion "0.0.0"
+  #define VersionFile FileOpen(AddBackslash(SourcePath) + "..\..\VERSION")
+  #define AppVersion Trim(FileRead(VersionFile))
+  #expr FileClose(VersionFile)
 #endif
 
 [Setup]
@@ -49,6 +52,7 @@ Source: "*.bat"; DestDir: "{app}"
 Source: "install.ps1"; DestDir: "{app}"
 Source: "firewall_block.ps1"; DestDir: "{app}"
 Source: "README.md"; DestDir: "{app}"
+Source: "VERSION"; DestDir: "{app}"
 Source: "refs\README.md"; DestDir: "{app}\refs"
 Source: "tools\*.py"; DestDir: "{app}\tools"
 Source: "tools\data_root.bat"; DestDir: "{app}\tools"
