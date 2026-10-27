@@ -3,7 +3,7 @@
 ; in it: install.ps1 downloads them on the first start, into the data folder %LOCALAPPDATA%\Kinora (paths.py).
 ;
 ; Build (Inno Setup 6), from the repository:
-;   ISCC packaging\windows\kinora.iss      -> dist\Kinora-0.9.0-setup.exe
+;   ISCC packaging\windows\kinora.iss      -> dist\Kinora-0.9.1-setup.exe
 ; The version comes from the VERSION file (its one place); /DAppVersion=... overrides it for a test build.
 
 #ifndef AppVersion

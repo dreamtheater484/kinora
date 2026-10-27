@@ -1,6 +1,6 @@
 # Builds Kinora's installers when a version tag is pushed, and attaches them to the GitHub release of that tag: the
 # Windows installer (Inno Setup, per user) and the Ubuntu package (.deb, nfpm). See packaging/. The tag must be v plus
-# the version in the VERSION file (v0.9.0 for 0.9.0), or nothing is built.
+# the version in the VERSION file (v0.9.1 for 0.9.1), or nothing is built.
 name: Release
 
 on:
