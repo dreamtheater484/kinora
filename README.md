@@ -54,7 +54,8 @@ It installs the program into `/opt/kinora`, the `kinora` command and a *Kinora* 
 menu, and pulls in git, curl, ffmpeg and Vulkan. The NVIDIA driver comes from *Software & Updates
 → Additional Drivers*. Start Kinora from the menu or with `kinora`. The first start runs
 `install.sh`, the Linux version of `install.ps1` with the same pinned versions. It uses `uv` from
-PATH, or downloads a pinned copy into the data folder.
+PATH, or downloads a pinned copy into the data folder. Ubuntu's ffmpeg has no VMAF filter, so
+*Make a smaller copy* shows the expected quality instead of measuring it.
 
 Data folder: `~/.local/share/kinora`. `sudo apt remove kinora` removes the program but never your
 data folder: delete `~/.local/share/kinora` yourself if you want it gone.

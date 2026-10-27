@@ -28,6 +28,8 @@ depends:
   - libgomp1
   - libvulkan1
   - xdg-utils
+scripts:
+  preremove: ./packaging/linux/preremove.sh
 
 contents:
   - src: ./app.py

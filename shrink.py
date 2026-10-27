@@ -8,6 +8,7 @@ usage: shrink.bat [--quality near|balanced|small] [--format av1|h265|h264] [--no
        writes <name>_<quality>-<format>.mp4 next to each video
 """
 import argparse
+import functools
 import json
 import subprocess
 import sys
@@ -69,6 +70,13 @@ def probe(path : Path) -> dict:
 	return { 'duration': duration, 'frames': frames, 'width': int(video['width']), 'height': int(video['height']) }
 
 
+@functools.cache
+def can_measure() -> bool:
+	"""Whether this ffmpeg has the libvmaf filter: the Windows builds do, Ubuntu's ffmpeg does not (then nothing is measured)."""
+	filters = subprocess.run([ 'ffmpeg', '-hide_banner', '-filters' ], capture_output = True, text = True).stdout
+	return any(line.split()[1:2] == [ 'libvmaf' ] for line in filters.splitlines())
+
+
 def measure_vmaf(distorted : Path, reference : Path, width : int, height : int, frames : int) -> tuple:
 	"""Mean VMAF and the score of the worst 5% of frames; long videos are sampled to stay quick."""
 	subsample = max(1, frames // 900)
@@ -105,7 +113,7 @@ def shrink_video(source : Path, output : Path, quality : str, video_format : str
 	result = { 'source': str(source), 'output': str(output), 'quality': quality, 'format': video_format,
 		'source_size': source.stat().st_size, 'size': output.stat().st_size, 'seconds': None, 'vmaf': None, 'vmaf_low': None }
 	result['reduction'] = round(100 * (1 - result['size'] / result['source_size']), 1)
-	if measure:
+	if measure and can_measure():
 		if on_progress:
 			on_progress(0.82, 'measuring quality')
 		frames = info['frames'] or int(info['duration'] * 30)
