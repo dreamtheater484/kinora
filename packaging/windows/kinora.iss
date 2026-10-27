@@ -3,8 +3,10 @@
 ; in it: install.ps1 downloads them on the first start, into the data folder %LOCALAPPDATA%\Kinora (paths.py).
 ;
 ; Build (Inno Setup 6), from the repository:
-;   ISCC packaging\windows\kinora.iss      -> dist\Kinora-0.9.1-setup.exe
+;   ISCC packaging\windows\kinora.iss      -> dist\Kinora-0.9.2-setup.exe
 ; The version comes from the VERSION file (its one place); /DAppVersion=... overrides it for a test build.
+; /DTestLaunch="<arguments>" makes the test build of packaging\windows\test_install.ps1: it also starts Kinora from the
+; last page in a silent install (with these arguments), so the test can follow exactly what a user's first start does.
 
 #ifndef AppVersion
   #define VersionFile FileOpen(AddBackslash(SourcePath) + "..\..\VERSION")
@@ -21,8 +23,16 @@ AppComments=Offline upscaler and editor for old home videos
 AppPublisherURL=https://github.com/dreamtheater484/kinora
 SourceDir=..\..
 OutputDir=dist
+#ifdef TestLaunch
+OutputBaseFilename=Kinora-{#AppVersion}-test-setup
+#else
 OutputBaseFilename=Kinora-{#AppVersion}-setup
+#endif
 PrivilegesRequired=lowest
+; Setup turns on Windows' Redirection Guard by default, and Kinora started from the last page inherits it. It then can
+; not follow the folder junctions uv makes for its Pythons (error 448, "untrusted mount point"), so the first start
+; fails. The guard protects installers that run as administrator; this one never does (PrivilegesRequired=lowest).
+RedirectionGuard=no
 DefaultDirName={autopf}\Kinora
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64compatible
@@ -66,7 +76,11 @@ Name: "{autoprograms}\Kinora"; Filename: "{app}\start.bat"; WorkingDir: "{app}";
 Name: "{autodesktop}\Kinora"; Filename: "{app}\start.bat"; WorkingDir: "{app}"; IconFilename: "{app}\kinora.ico"; Comment: "Upscale and edit old home videos"; Tasks: desktopicon
 
 [Run]
+#ifdef TestLaunch
+Filename: "{app}\start.bat"; Parameters: "{#TestLaunch}"; WorkingDir: "{app}"; Description: "Start Kinora (the first start downloads about 25 GB)"; Flags: postinstall nowait shellexec
+#else
 Filename: "{app}\start.bat"; WorkingDir: "{app}"; Description: "Start Kinora (the first start downloads about 25 GB)"; Flags: postinstall nowait skipifsilent shellexec
+#endif
 
 [UninstallDelete]
 ; made by Python while Kinora runs

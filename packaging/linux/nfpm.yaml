@@ -3,7 +3,7 @@
 #
 # Build (nfpm 2), from a checkout of the repository with LF line endings; the version comes from the VERSION file:
 #   KINORA_VERSION=$(cat VERSION) nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
-#   -> dist/kinora_0.9.1_amd64.deb
+#   -> dist/kinora_0.9.2_amd64.deb
 name: kinora
 version: ${KINORA_VERSION}
 arch: amd64

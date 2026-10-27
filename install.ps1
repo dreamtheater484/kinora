@@ -9,11 +9,18 @@
 #   winget install Git.Git astral-sh.uv Gyan.FFmpeg
 
 $ErrorActionPreference = 'Stop'
+# Python writes UTF-8 (SeedVR2 prints emoji) and PowerShell reads programs' output in the console's encoding: make both
+# UTF-8, or the window shows garbled characters
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+$env:PYTHONUTF8 = '1'
 $root = $PSScriptRoot
 # the same rule as paths.py and tools\data_root.bat (start.bat passes the folder in KINORA_DATA)
 $data = if ($env:KINORA_DATA) { $env:KINORA_DATA } elseif (Test-Path (Join-Path $root 'installed.txt')) { Join-Path $env:LOCALAPPDATA 'Kinora' } else { $root }
 $env:KINORA_DATA = $data  # so download_models.py agrees
 $tools = Join-Path $data 'tools'
+# everything this script says also goes to install.log in the data folder, to see afterwards where a first start stopped
+New-Item -ItemType Directory -Force $data | Out-Null
+Start-Transcript -Path (Join-Path $data 'install.log') -Append | Out-Null
 
 # pinned versions: newer upstream releases may change options this project relies on
 $SEEDVR2_REPO = 'https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git'
@@ -92,8 +99,9 @@ try {
 		$temp = Join-Path $env:TEMP ('rife-' + [guid]::NewGuid().ToString('N'))
 		New-Item -ItemType Directory -Force $temp | Out-Null
 		try {
-			Native 'downloading RIFE (830 MB)' { curl.exe --location --fail --progress-bar --output (Join-Path $temp 'rife.zip') $RIFE_URL }
-			Native 'unpacking RIFE' { tar.exe -xf (Join-Path $temp 'rife.zip') -C $temp }
+			# Windows' own curl and tar by their full path: Git's GNU tar (Git\usr\bin, often in PATH) reads C:\ as a host
+			Native 'downloading RIFE (830 MB)' { & "$env:SystemRoot\System32\curl.exe" --location --fail --progress-bar --output (Join-Path $temp 'rife.zip') $RIFE_URL }
+			Native 'unpacking RIFE' { & "$env:SystemRoot\System32\tar.exe" -xf (Join-Path $temp 'rife.zip') -C $temp }
 			$exe = Get-ChildItem $temp -Recurse -Filter 'rife-ncnn-vulkan.exe' | Select-Object -First 1
 			New-Item -ItemType Directory -Force $rife | Out-Null
 			Copy-Item $exe.FullName $rife -Force
@@ -111,10 +119,12 @@ try {
 	Write-Host ''
 	Write-Host "Installation complete, in $data. From now on Kinora works without internet." -ForegroundColor Green
 	Write-Host 'Optional hard block: run firewall_block.ps1 once in an Administrator PowerShell.'
+	Stop-Transcript | Out-Null
 	exit 0
 } catch {
 	Write-Host ''
 	Write-Host "Installation stopped: $($_.Exception.Message)" -ForegroundColor Red
 	Write-Host 'Fix the problem and start again; finished steps are skipped.'
+	Stop-Transcript | Out-Null
 	exit 1
 }

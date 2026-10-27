@@ -6,12 +6,12 @@ speed up and add texts. Everything runs offline on this PC.
 
 ## Download
 
-**Kinora 0.9.1** · [all releases](https://github.com/dreamtheater484/kinora/releases)
+**Kinora 0.9.2** · [all releases](https://github.com/dreamtheater484/kinora/releases)
 
 | System | Download | Then |
 |---|---|---|
-| **Windows 10/11** | [**Kinora-0.9.1-setup.exe**](https://github.com/dreamtheater484/kinora/releases/download/v0.9.1/Kinora-0.9.1-setup.exe) | run it, then start *Kinora* from the Start menu |
-| **Ubuntu 22.04+** | [**kinora_0.9.1_amd64.deb**](https://github.com/dreamtheater484/kinora/releases/download/v0.9.1/kinora_0.9.1_amd64.deb) | `sudo apt install ./kinora_0.9.1_amd64.deb`, then start *Kinora* from the app menu |
+| **Windows 10/11** | [**Kinora-0.9.2-setup.exe**](https://github.com/dreamtheater484/kinora/releases/download/v0.9.2/Kinora-0.9.2-setup.exe) | run it, then start *Kinora* from the Start menu |
+| **Ubuntu 22.04+** | [**kinora_0.9.2_amd64.deb**](https://github.com/dreamtheater484/kinora/releases/download/v0.9.2/kinora_0.9.2_amd64.deb) | `sudo apt install ./kinora_0.9.2_amd64.deb`, then start *Kinora* from the app menu |
 
 You need an NVIDIA GPU. On Windows, first install git, uv and ffmpeg once:
 `winget install Git.Git astral-sh.uv Gyan.FFmpeg`. The first start downloads the tools and models
@@ -48,7 +48,7 @@ that folder. Set `KINORA_DATA` to use another folder.
    winget install Git.Git astral-sh.uv Gyan.FFmpeg
    ```
 
-2. Download `Kinora-0.9.1-setup.exe` from the
+2. Download `Kinora-0.9.2-setup.exe` from the
    [releases](https://github.com/dreamtheater484/kinora/releases) and run it. It installs for your
    user only (no administrator rights) into `%LOCALAPPDATA%\Programs\Kinora`, with a
    Start-menu shortcut.
@@ -59,11 +59,11 @@ delete it too. Answer *No* to keep your videos and the 25 GB of downloads for a 
 
 ### Ubuntu 22.04 and newer
 
-Download `kinora_0.9.1_amd64.deb` from the
+Download `kinora_0.9.2_amd64.deb` from the
 [releases](https://github.com/dreamtheater484/kinora/releases) and install it:
 
 ```bash
-sudo apt install ./kinora_0.9.1_amd64.deb
+sudo apt install ./kinora_0.9.2_amd64.deb
 ```
 
 It installs the program into `/opt/kinora`, the `kinora` command and a *Kinora* entry in the app
@@ -89,9 +89,9 @@ apart by the `installed.txt` that the installers put next to `app.py` (see `path
 
 ### Building the installers
 
-Kinora's version is kept in one place, the `VERSION` file (now 0.9.1); the installers, the
+Kinora's version is kept in one place, the `VERSION` file (now 0.9.2); the installers, the
 packages and the app (`/api/state`, and the line it prints on start) read it from there. Pushing
-the tag `v` + that version (`v0.9.1`) makes GitHub Actions build both installers and attach them
+the tag `v` + that version (`v0.9.2`) makes GitHub Actions build both installers and attach them
 to the tag's release (`.github/workflows/release.yml`); a tag that does not match `VERSION` builds
 nothing. Locally:
 
@@ -103,8 +103,21 @@ ISCC packaging\windows\kinora.iss
 KINORA_VERSION=$(cat VERSION) nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
 ```
 
-Both write to `dist\` (`Kinora-0.9.1-setup.exe`, `kinora_0.9.1_amd64.deb`). The Inno Setup script needs Inno Setup 6. Build the `.deb` from a checkout
+Both write to `dist\` (`Kinora-0.9.2-setup.exe`, `kinora_0.9.2_amd64.deb`). The Inno Setup script needs Inno Setup 6. Build the `.deb` from a checkout
 with LF line endings, e.g. in WSL.
+
+**Before every release (tag), test the Windows installer end to end** on a PC with an NVIDIA GPU, and tag only when it
+ends with `PASSED`:
+
+```bat
+powershell -ExecutionPolicy Bypass -File packaging\windows\test_install.ps1
+```
+
+It builds the installer and installs it the way a user does: the installer then starts Kinora itself, as its last
+page does. The script checks that this Kinora runs as 64-bit without the installer's Redirection Guard. It then
+follows the complete first start (all downloads; the log is `install.log` in the data folder) until the app
+answers with the version in `VERSION`. Last, it upscales a short test clip on the GPU and checks that FaceFusion
+finds the GPU. It uses the normal install and data folders, and removes the test clip and its results afterwards.
 
 ## Front end
 
