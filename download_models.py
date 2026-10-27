@@ -10,7 +10,7 @@ import os
 import subprocess
 import sys
 
-from upscale import FACE_ENHANCER_MODELS, FACEFUSION_PYTHON, SEEDVR2_MODEL_DIR, SEEDVR2_MODELS, SEEDVR2_PYTHON, TOOLS, facefusion_face_args
+from upscale import FACE_ENHANCER_MODELS, FACEFUSION_PYTHON, SEEDVR2_MODEL_DIR, SEEDVR2_MODELS, SEEDVR2_PYTHON, SCRIPTS, facefusion_face_args
 
 
 def main() -> None:
@@ -22,11 +22,11 @@ def main() -> None:
 
 	print('=== SeedVR2 models -> ' + str(SEEDVR2_MODEL_DIR), flush = True)
 	SEEDVR2_MODEL_DIR.mkdir(parents = True, exist_ok = True)
-	subprocess.run([ str(SEEDVR2_PYTHON), str(TOOLS / 'seedvr2_setup.py'), str(SEEDVR2_MODEL_DIR), *[ SEEDVR2_MODELS[key] for key in model_keys ] ], env = env, check = True)
+	subprocess.run([ str(SEEDVR2_PYTHON), str(SCRIPTS / 'seedvr2_setup.py'), str(SEEDVR2_MODEL_DIR), *[ SEEDVR2_MODELS[key] for key in model_keys ] ], env = env, check = True)
 
 	print('=== FaceFusion models', flush = True)
 	for face_enhancer_model in FACE_ENHANCER_MODELS:
-		subprocess.run([ str(FACEFUSION_PYTHON), str(TOOLS / 'ff_setup.py'), *facefusion_face_args(face_enhancer_model, expression = True) ], env = env, check = True)
+		subprocess.run([ str(FACEFUSION_PYTHON), str(SCRIPTS / 'ff_setup.py'), *facefusion_face_args(face_enhancer_model, expression = True) ], env = env, check = True)
 
 	print('\nAll models downloaded. From now on upscale.bat works without internet.')
 

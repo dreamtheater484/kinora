@@ -13,23 +13,83 @@ input ─► prep (section, crop, even timing, find real/damaged pictures) ─�
 
 ## Installation
 
-Needs Windows 10/11, an NVIDIA GPU (developed on an RTX 5090, 32 GB; SeedVR2 7B wants a lot of
-VRAM) and `git`, `uv` and `ffmpeg` in PATH:
+Kinora needs an NVIDIA GPU with a current driver (developed on an RTX 5090, 32 GB; SeedVR2 7B wants
+a lot of VRAM). The installers are small: the first start downloads about 25 GB once, into
+Kinora's data folder: SeedVR2 and FaceFusion (pinned commits), two Pythons and their packages
+(`tools\requirements\`, not system-wide), RIFE and the model weights. That step can be re-run
+safely (finished steps are skipped). After it, nothing uses the internet.
+
+The program and your data are kept apart. The data folder holds your videos (`input\`), results
+(`output\`), edit projects (`projects\`), reference photos (`refs\`), the work cache (`work\`) and
+the downloaded tools and models (`tools\`, `models\`). Paths like `output\` in this README are in
+that folder. Set `KINORA_DATA` to use another folder.
+
+### Windows 10/11
+
+1. Install git, uv and ffmpeg once, in a terminal:
+
+   ```bat
+   winget install Git.Git astral-sh.uv Gyan.FFmpeg
+   ```
+
+2. Download `Kinora-<version>-setup.exe` from the
+   [releases](https://github.com/dreamtheater484/kinora/releases) and run it. It installs for your
+   user only (no administrator rights) into `%LOCALAPPDATA%\Programs\Kinora`, with a
+   Start-menu shortcut.
+3. Start **Kinora** from the Start menu. The first start runs `install.ps1`.
+
+Data folder: `%LOCALAPPDATA%\Kinora`. Uninstalling (Settings → Apps → Kinora) asks whether to
+delete it too. Answer *No* to keep your videos and the 25 GB of downloads for a later install.
+
+### Ubuntu 22.04 and newer
+
+Download `kinora_<version>_amd64.deb` from the
+[releases](https://github.com/dreamtheater484/kinora/releases) and install it:
+
+```bash
+sudo apt install ./kinora_<version>_amd64.deb
+```
+
+It installs the program into `/opt/kinora`, the `kinora` command and a *Kinora* entry in the app
+menu, and pulls in git, curl, ffmpeg and Vulkan. The NVIDIA driver comes from *Software & Updates
+→ Additional Drivers*. Start Kinora from the menu or with `kinora`. The first start runs
+`install.sh`, the Linux version of `install.ps1` with the same pinned versions. It uses `uv` from
+PATH, or downloads a pinned copy into the data folder.
+
+Data folder: `~/.local/share/kinora`. `sudo apt remove kinora` removes the program but never your
+data folder: delete `~/.local/share/kinora` yourself if you want it gone.
+
+### Portable (a git checkout)
 
 ```bat
-winget install Git.Git astral-sh.uv Gyan.FFmpeg
 git clone https://github.com/dreamtheater484/kinora.git
 ```
 
-Then double-click **`start.bat`**. The first start runs `install.ps1`, which downloads about
-25 GB once: SeedVR2 and FaceFusion (pinned commits), two Pythons and their packages
-(`tools\requirements\`, inside this folder, not system-wide), RIFE and the model weights. It can
-be re-run safely (finished steps are skipped). After that nothing uses the internet.
+Then double-click **`start.bat`** (Windows, with git, uv and ffmpeg as above), or run
+`./start.sh` (Linux, after `sudo apt install git curl ffmpeg libvulkan1 libgl1`). A checkout keeps
+its data next to the program, in the layout at the end of this README. An installed copy is told
+apart by the `installed.txt` that the installers put next to `app.py` (see `paths.py`).
+
+### Building the installers
+
+A pushed `v*` tag makes GitHub Actions build both and attach them to the tag's release
+(`.github/workflows/release.yml`). Locally:
+
+```bat
+ISCC /DAppVersion=1.0.0 packaging\windows\kinora.iss
+```
+
+```bash
+KINORA_VERSION=1.0.0 nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+```
+
+Both write to `dist\`. The Inno Setup script needs Inno Setup 6. Build the `.deb` from a checkout
+with LF line endings, e.g. in WSL.
 
 ## Front end
 
-Double-click **`start.bat`**. A small window opens (keep it open) and Kinora appears in your
-browser at http://127.0.0.1:8766 (this PC only). The rail on the left switches between three
+Start **Kinora** (Start menu, `kinora`, or `start.bat` / `./start.sh` in a checkout). A small
+window opens (keep it open) and Kinora appears in your browser at http://127.0.0.1:8766 (this PC only). The rail on the left switches between three
 screens: **Upscale**, **Edit** and **Library**. While videos are being made, a ring and the
 percentage on the Upscale icon show the progress from the other screens.
 
@@ -37,7 +97,7 @@ percentage on the Upscale icon show the progress from the other screens.
 
 **Your videos** (the row at the bottom). Drop videos or whole folders anywhere on the window (they
 are copied into `input\`, keeping the folder name; identical files are reused), or use *Add videos*
-/ *Add folder* (Windows dialogs, no copying). The videos are done one by one, left to right: change
+/ *Add folder* (file dialogs, no copying). The videos are done one by one, left to right: change
 the order with the arrows on a video, remove one with ✕, re-run a finished or failed one with ↺.
 The list and the settings survive a restart.
 
@@ -165,6 +225,10 @@ or next to the project file when the folder was moved along with them.
 
 ## Command line
 
+The `.bat` files are next to `start.bat` (in an installed copy: `%LOCALAPPDATA%\Programs\Kinora`).
+On Linux, run the scripts with Kinora's own Python, e.g.
+`~/.local/share/kinora/tools/seedvr2/.venv/bin/python /opt/kinora/upscale.py --help`.
+
 ```bat
 upscale.bat input\clip.avi --refs refs\person
 upscale.bat input\clip.avi --refs refs\person --start 1:58 --end 2:35 --fps 30 :: a section, at 30 fps
@@ -258,28 +322,37 @@ faces are blanked out automatically (crops in `work\_refs\`).
 
 ## Offline guarantee
 
-- The installation (`install.ps1`, run by the first `start.bat`) is the only step that uses the
+- The installation (`install.ps1` / `install.sh`, run by the first start) is the only step that uses the
   internet: GitHub (SeedVR2, FaceFusion, RIFE release 20250112), PyPI/PyTorch (packages),
   Hugging Face/GitHub (model weights). Extra models later: `download_models.bat 7b-sharp`.
 - The front end listens on 127.0.0.1 only and loads nothing from the internet; its typefaces
   (Krona One, Instrument Sans, Martian Mono) are in `ui\fonts\`, under the SIL Open Font License.
 - `upscale.bat` starts both tools behind a guard that refuses any non-local network connection,
   and FaceFusion's model-URL checks are disabled.
-- Hard block: run `firewall_block.ps1` once in an Administrator PowerShell. It blocks outbound
-  traffic for this project's own Python interpreters only (`tools\python`, the two `.venv`s).
+- Hard block (Windows): run `firewall_block.ps1` once in an Administrator PowerShell. It blocks
+  outbound traffic for this project's own Python interpreters only (`tools\python`, the two `.venv`s).
 
 ## Layout
+
+The data folder (next to the program in a checkout, see [Installation](#installation)):
 
 ```
 input\      source videos           refs\       reference photos, one folder per person
 output\     results                 work\       per-video stage cache (safe to delete)
-models\     SeedVR2 weights         tools\      launchers + helpers; SeedVR2, FaceFusion, Pythons, RIFE (installed)
-ui\         the front end page      tools\requirements\   pinned Python packages
-            (editor.js/.css: Edit; fonts\: typefaces)
-app.py      the front end's server  editor.py   Edit's export (and preview copies)
+models\     SeedVR2 weights         tools\      SeedVR2, FaceFusion, Pythons, RIFE (installed)
 projects\   edit project files (.vedit), unless saved elsewhere
 ```
 
+The program:
+
+```
+app.py      the front end's server  editor.py   Edit's export (and preview copies)
+ui\         the front end page      tools\      launchers + helpers; requirements\: pinned Python packages
+            (editor.js/.css: Edit; fonts\: typefaces)
+paths.py    where the data folder is
+start.bat, install.ps1   Windows     start.sh, install.sh   Linux
+packaging\  the Windows installer (Inno Setup) and the Ubuntu package (nfpm)
+```
+
 Not in git: `input\`, `output\`, `work\`, `projects\` (personal videos and edits), the photos in
-`refs\` and everything
-`install.ps1` downloads.
+`refs\` and everything `install.ps1` / `install.sh` download.

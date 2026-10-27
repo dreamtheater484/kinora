@@ -1,0 +1,10 @@
+This copy of Kinora was installed by its Windows installer or its Ubuntu package.
+
+It keeps its data - your videos, results, edits and reference photos, and the tools and models it
+downloads on the first start - in your own data folder, not in this program folder:
+
+  Windows  %LOCALAPPDATA%\Kinora
+  Ubuntu   ~/.local/share/kinora
+
+A copy without this file (a git checkout or an unpacked zip) keeps its data next to the program.
+See paths.py.

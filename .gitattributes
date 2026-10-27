@@ -1,6 +1,12 @@
 * text=auto
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+*.iss text eol=crlf
+# run on Linux: LF even in a Windows checkout (the .deb can be built from one)
+*.sh text eol=lf
+*.desktop text eol=lf
+packaging/linux/kinora text eol=lf
 *.jpg binary
 *.JPG binary
 *.png binary
+*.ico binary

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Kinora
+GenericName=Video Upscaler
+Comment=Upscale, restore and edit old home videos, offline
+Exec=kinora
+Icon=kinora
+Terminal=true
+Categories=AudioVideo;Video;AudioVideoEditing;
+Keywords=upscale;restore;home video;video editor;

@@ -32,15 +32,16 @@ from pathlib import Path
 import numpy
 
 import shrink
+from paths import DATA, WINDOWS, venv_python
 
-ROOT = Path(__file__).resolve().parent
-TOOLS = ROOT / 'tools'
-SEEDVR2_PYTHON = TOOLS / 'seedvr2' / '.venv' / 'Scripts' / 'python.exe'
-FACEFUSION_PYTHON = TOOLS / 'facefusion' / '.venv' / 'Scripts' / 'python.exe'
-SEEDVR2_MODEL_DIR = ROOT / 'models' / 'seedvr2'
-RIFE_EXE = TOOLS / 'rife' / 'rife-ncnn-vulkan.exe'
+SCRIPTS = Path(__file__).resolve().parent / 'tools'  # this program's launchers and helpers
+TOOLS = DATA / 'tools'  # what install.ps1 / install.sh installed
+SEEDVR2_PYTHON = venv_python(TOOLS / 'seedvr2')
+FACEFUSION_PYTHON = venv_python(TOOLS / 'facefusion')
+SEEDVR2_MODEL_DIR = DATA / 'models' / 'seedvr2'
+RIFE_EXE = TOOLS / 'rife' / ('rife-ncnn-vulkan.exe' if WINDOWS else 'rife-ncnn-vulkan')
 RIFE_MODEL = TOOLS / 'rife' / 'rife-v4.26'
-STATS_FILE = ROOT / 'work' / '_stats.json'
+STATS_FILE = DATA / 'work' / '_stats.json'
 
 SEEDVR2_MODELS =\
 {
@@ -378,7 +379,7 @@ def run(command : list, on_line = None, poll = None, done_marker : str = None) -
 		time.sleep(0.5)
 	reader.join()
 	if process.returncode != 0 and not finished:
-		raise PipelineError('{} failed (exit code {}). Last output:\n{}'.format(Path(str(command[1] if str(command[0]).endswith('python.exe') else command[0])).name, process.returncode, '\n'.join(tail)))
+		raise PipelineError('{} failed (exit code {}). Last output:\n{}'.format(Path(str(command[1] if Path(str(command[0])).name.startswith('python') else command[0])).name, process.returncode, '\n'.join(tail)))
 
 
 def ffmpeg(*arguments, total_frames : int = 0, span : tuple = (0.0, 1.0)) -> None:
@@ -559,7 +560,7 @@ def prepare_refs(args : argparse.Namespace) -> list:
 	"""Reduce the reference photos to single-face crops of the person they have in common."""
 	progress.begin('refs', 'finding the shared face')
 	photos = collect_refs(args.refs)
-	crops_dir = ROOT / 'work' / '_refs' / '_'.join(Path(ref).resolve().stem for ref in args.refs)[:80]
+	crops_dir = DATA / 'work' / '_refs' / '_'.join(Path(ref).resolve().stem for ref in args.refs)[:80]
 	params = { 'photos': [ [ str(photo.resolve()), photo.stat().st_mtime ] for photo in photos ], 'min_face': args.min_ref_face }
 	params_file = crops_dir.with_suffix('.json')
 
@@ -569,7 +570,7 @@ def prepare_refs(args : argparse.Namespace) -> list:
 		log('refs: selecting the shared face in ' + str(len(photos)) + ' photos')
 		params_file.unlink(missing_ok = True)  # see is_cached
 		crops_dir.parent.mkdir(parents = True, exist_ok = True)
-		run([ FACEFUSION_PYTHON, TOOLS / 'prepare_refs.py', crops_dir, args.min_ref_face, *[ photo.resolve() for photo in photos ] ])
+		run([ FACEFUSION_PYTHON, SCRIPTS / 'prepare_refs.py', crops_dir, args.min_ref_face, *[ photo.resolve() for photo in photos ] ])
 		params_file.write_text(json.dumps(params, indent = 2))
 	crops = sorted(crops_dir.glob('*.png'))
 	if not crops:
@@ -616,7 +617,7 @@ def upscale_part(source : Path, options : list, start : int, end : int, part_fil
 	if start > 0:
 		part_options[part_options.index('--prepend_frames') + 1] = 0
 	part_raw.unlink(missing_ok = True)
-	run([ SEEDVR2_PYTHON, TOOLS / 'run_seedvr2.py', part_input, '--output', part_raw, '--model_dir', SEEDVR2_MODEL_DIR, *part_options ], on_line = on_line)
+	run([ SEEDVR2_PYTHON, SCRIPTS / 'run_seedvr2.py', part_input, '--output', part_raw, '--model_dir', SEEDVR2_MODEL_DIR, *part_options ], on_line = on_line)
 	# SeedVR2's CLI leaves its --prepend_frames lead-in (reversed copies of the first frames) in the output; cut it and the
 	# context frames, so video and audio stay in sync
 	frames = end - start
@@ -723,7 +724,7 @@ def stage_faces(args : argparse.Namespace, seedvr2_file : Path, work : Path, ref
 	log('faces: ' + str(len(refs)) + ' reference faces, ' + FACE_SWAPPER_MODEL + ' + ' + args.face_enhancer)
 	temp_path = work / 'facefusion_temp'
 	shutil.rmtree(temp_path, ignore_errors = True)  # frames of a run that was paused or stopped
-	run([ FACEFUSION_PYTHON, TOOLS / 'run_facefusion.py', 'headless-run',
+	run([ FACEFUSION_PYTHON, SCRIPTS / 'run_facefusion.py', 'headless-run',
 		'--source-paths', *[ ref.resolve() for ref in refs ],
 		'--target-path', seedvr2_file.resolve(),
 		'--output-path', faces_file.resolve(),
@@ -771,7 +772,7 @@ def stage_interpolate(args : argparse.Namespace, source_file : Path, interpolate
 			done, total = int(match.group(1)), int(match.group(2))
 			progress.update(done / total, 'frame {}/{}'.format(done, total))
 
-	run([ SEEDVR2_PYTHON, TOOLS / 'interpolate.py', source_file, interpolated_file, timeline_file, '{:g}'.format(target_fps), RIFE_MODEL, rife_gpu() ], on_line = on_line, done_marker = 'done ')
+	run([ SEEDVR2_PYTHON, SCRIPTS / 'interpolate.py', source_file, interpolated_file, timeline_file, '{:g}'.format(target_fps), RIFE_MODEL, rife_gpu() ], on_line = on_line, done_marker = 'done ')
 	expected = int(round(frames / timeline['fps'] * target_fps))
 	if count_frames(interpolated_file) != expected:
 		raise PipelineError('interpolation produced {} frames instead of {}'.format(count_frames(interpolated_file), expected))
@@ -803,7 +804,7 @@ def output_stem(args : argparse.Namespace, info : dict) -> str:
 
 def stage_encode(args : argparse.Namespace, info : dict, prep_file : Path, seedvr2_file : Path, final_stage : Path, work : Path, interpolated : bool) -> dict:
 	progress.begin('encode', 'encoding final video')
-	output_dir = ROOT / 'output'
+	output_dir = DATA / 'output'
 	output_dir.mkdir(exist_ok = True)
 	stem = output_stem(args, info)
 	output_file = output_dir / (stem + '.mp4')
@@ -946,7 +947,7 @@ def main() -> None:
 	progress.started -= args.elapsed
 
 	started = time.time()
-	work = ROOT / 'work' / args.input.stem
+	work = DATA / 'work' / args.input.stem
 	work.mkdir(parents = True, exist_ok = True)
 	print('{}: {}x{} @ {:.3f} fps, {} long{}; section {} - {} ({} frames)'.format(args.input.name, info['width'], info['height'], float(info['fps']), format_clock(info['duration']), ', audio' if info['has_audio'] else '', format_clock(args.start_seconds), format_clock(args.end_seconds), args.frames_in), flush = True)
 	try:

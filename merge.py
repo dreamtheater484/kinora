@@ -13,9 +13,9 @@ from fractions import Fraction
 from pathlib import Path
 
 import shrink
+from paths import DATA
 
-ROOT = Path(__file__).resolve().parent
-WORK = ROOT / 'work' / '_merge'
+WORK = DATA / 'work' / '_merge'
 
 
 def probe(path : Path) -> dict:

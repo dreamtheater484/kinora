@@ -1,0 +1,4 @@
+#!/bin/sh
+# Kinora's launcher (the Ubuntu package): the program is in /opt/kinora, the data (videos, results, the tools and
+# models that the first start downloads) in ~/.local/share/kinora. Arguments go to app.py (--port, --no-browser).
+exec /opt/kinora/start.sh "$@"

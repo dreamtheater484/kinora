@@ -2,8 +2,8 @@
 import os
 import sys
 
-TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
-SEEDVR2_DIR = os.path.join(TOOLS_DIR, 'seedvr2')
+# runs on SeedVR2's own Python, tools/seedvr2/.venv in the data folder: the checkout is the folder around it
+SEEDVR2_DIR = os.path.dirname(sys.prefix)
 
 sys.stdout.reconfigure(encoding = 'utf-8', errors = 'replace')
 sys.stderr.reconfigure(encoding = 'utf-8', errors = 'replace')

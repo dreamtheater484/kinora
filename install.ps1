@@ -2,13 +2,18 @@
 # Pythons with their packages, RIFE and the model weights (~25 GB download in total).
 # start.bat runs this automatically on the first start. Safe to run again: finished steps are
 # skipped, so it also repairs a half-finished installation. After this, nothing uses the internet.
+# Everything goes into Kinora's data folder (see paths.py): next to this script in a portable copy,
+# %LOCALAPPDATA%\Kinora in an installed one. install.sh is the Linux version of this script.
 #
 # Needs: Windows 10/11, an NVIDIA GPU with a current driver, and git, uv and ffmpeg in PATH:
 #   winget install Git.Git astral-sh.uv Gyan.FFmpeg
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$tools = Join-Path $root 'tools'
+# the same rule as paths.py and tools\data_root.bat (start.bat passes the folder in KINORA_DATA)
+$data = if ($env:KINORA_DATA) { $env:KINORA_DATA } elseif (Test-Path (Join-Path $root 'installed.txt')) { Join-Path $env:LOCALAPPDATA 'Kinora' } else { $root }
+$env:KINORA_DATA = $data  # so download_models.py agrees
+$tools = Join-Path $data 'tools'
 
 # pinned versions: newer upstream releases may change options this project relies on
 $SEEDVR2_REPO = 'https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git'
@@ -66,18 +71,18 @@ try {
 	Step 'FaceFusion (face lock)'
 	Checkout $FACEFUSION_REPO $FACEFUSION_COMMIT (Join-Path $tools 'facefusion')
 
-	Step 'Python (inside this folder, not system-wide)'
+	Step 'Python (inside the data folder, not system-wide)'
 	$env:UV_PYTHON_INSTALL_DIR = Join-Path $tools 'python'
 	Native 'installing Python' { uv python install --no-bin @PYTHONS }
 
 	Step 'Packages for SeedVR2 and RIFE (includes PyTorch, ~3 GB)'
 	$seedvr2Python = Venv (Join-Path $tools 'seedvr2\.venv') $PYTHONS[0]
 	Native 'installing PyTorch' { uv pip install --quiet --python $seedvr2Python @TORCH --index-url $TORCH_INDEX }
-	Native 'installing packages' { uv pip install --quiet --python $seedvr2Python -r (Join-Path $tools 'requirements\seedvr2.txt') }
+	Native 'installing packages' { uv pip install --quiet --python $seedvr2Python -r (Join-Path $root 'tools\requirements\seedvr2.txt') }
 
 	Step 'Packages for FaceFusion'
 	$facefusionPython = Venv (Join-Path $tools 'facefusion\.venv') $PYTHONS[1]
-	Native 'installing packages' { uv pip install --quiet --python $facefusionPython -r (Join-Path $tools 'requirements\facefusion.txt') }
+	Native 'installing packages' { uv pip install --quiet --python $facefusionPython -r (Join-Path $root 'tools\requirements\facefusion.txt') }
 
 	Step "RIFE frame interpolation ($RIFE_MODEL)"
 	$rife = Join-Path $tools 'rife'
@@ -104,7 +109,7 @@ try {
 
 	Set-Content -Path (Join-Path $tools '.installed') -Value "installed $(Get-Date -Format s)`nseedvr2 $SEEDVR2_COMMIT`nfacefusion $FACEFUSION_COMMIT" -Encoding utf8
 	Write-Host ''
-	Write-Host 'Installation complete. From now on Kinora works without internet.' -ForegroundColor Green
+	Write-Host "Installation complete, in $data. From now on Kinora works without internet." -ForegroundColor Green
 	Write-Host 'Optional hard block: run firewall_block.ps1 once in an Administrator PowerShell.'
 	exit 0
 } catch {

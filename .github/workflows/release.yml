@@ -1,0 +1,75 @@
+# Builds Kinora's installers when a version tag (v1.2.3) is pushed, and attaches them to the GitHub release of that
+# tag: the Windows installer (Inno Setup, per user) and the Ubuntu package (.deb, nfpm). See packaging/.
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Inno Setup
+        run: choco install innosetup --version 6.7.1 --no-progress -y
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$($env:GITHUB_REF_NAME.TrimStart('v'))" packaging\windows\kinora.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  ubuntu:
+    runs-on: ubuntu-latest
+    env:
+      NFPM_URL: https://github.com/goreleaser/nfpm/releases/download/v2.48.0/nfpm_2.48.0_Linux_x86_64.tar.gz
+      NFPM_SHA256: 6d7f9a28b2f397934403950fcbba83f598b08d02edbe79a0815b3b4897341750
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install nfpm
+        run: |
+          curl --location --fail --silent --show-error --output "$RUNNER_TEMP/nfpm.tar.gz" "$NFPM_URL"
+          echo "$NFPM_SHA256  $RUNNER_TEMP/nfpm.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/nfpm.tar.gz" -C "$RUNNER_TEMP" nfpm
+      - name: Build the package
+        run: |
+          mkdir -p dist
+          KINORA_VERSION="${GITHUB_REF_NAME#v}" "$RUNNER_TEMP/nfpm" package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+      - name: Check the package
+        run: |
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ubuntu
+          path: dist/*.deb
+          if-no-files-found: error
+
+  release:
+    needs: [ windows, ubuntu ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # one folder per artifact: dist/windows/*.exe and dist/ubuntu/*.deb
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+      - name: Attach the installers to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/*/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/*/* --title "Kinora ${GITHUB_REF_NAME#v}" --generate-notes
+          fi

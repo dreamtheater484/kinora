@@ -1,0 +1,75 @@
+# Kinora's Ubuntu package: the program in /opt/kinora, a launcher (kinora) and a menu entry. The tools and models
+# (about 25 GB) are not in it: install.sh downloads them on the first start, into ~/.local/share/kinora (paths.py).
+#
+# Build (nfpm 2), from a checkout of the repository with LF line endings:
+#   KINORA_VERSION=1.0.0 nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+name: kinora
+version: ${KINORA_VERSION}
+arch: amd64
+platform: linux
+section: video
+priority: optional
+maintainer: dreamtheater484 <84675674+dreamtheater484@users.noreply.github.com>
+homepage: https://github.com/dreamtheater484/kinora
+description: |-
+  Offline upscaler and editor for old home videos
+  Kinora upscales low-resolution video to 1080p with SeedVR2, can keep a person's face true
+  to reference photos (FaceFusion), smooths choppy clips (RIFE) and has a video editor to
+  trim, join, speed up and add texts. Everything runs offline; the first start downloads
+  the tools and models (about 25 GB) into ~/.local/share/kinora. Needs an NVIDIA GPU.
+depends:
+  - bash
+  - ca-certificates
+  - curl
+  - ffmpeg
+  - git
+  - libgl1
+  - libglib2.0-0
+  - libgomp1
+  - libvulkan1
+  - xdg-utils
+
+contents:
+  - src: ./app.py
+    dst: /opt/kinora/app.py
+  - src: ./editor.py
+    dst: /opt/kinora/editor.py
+  - src: ./merge.py
+    dst: /opt/kinora/merge.py
+  - src: ./paths.py
+    dst: /opt/kinora/paths.py
+  - src: ./shrink.py
+    dst: /opt/kinora/shrink.py
+  - src: ./upscale.py
+    dst: /opt/kinora/upscale.py
+  - src: ./download_models.py
+    dst: /opt/kinora/download_models.py
+  - src: ./README.md
+    dst: /opt/kinora/README.md
+  - src: ./refs/README.md
+    dst: /opt/kinora/refs/README.md
+  - src: ./tools/*.py
+    dst: /opt/kinora/tools/
+  - src: ./tools/requirements/*.txt
+    dst: /opt/kinora/tools/requirements/
+  - src: ./ui
+    dst: /opt/kinora/ui
+    type: tree
+  - src: ./packaging/installed.txt
+    dst: /opt/kinora/installed.txt
+  - src: ./start.sh
+    dst: /opt/kinora/start.sh
+    file_info:
+      mode: 0755
+  - src: ./install.sh
+    dst: /opt/kinora/install.sh
+    file_info:
+      mode: 0755
+  - src: ./packaging/linux/kinora
+    dst: /usr/bin/kinora
+    file_info:
+      mode: 0755
+  - src: ./packaging/linux/kinora.desktop
+    dst: /usr/share/applications/kinora.desktop
+  - src: ./packaging/kinora.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/kinora.svg

@@ -3,10 +3,11 @@ and a video editor (the Edit tab, editor.py) for trimming, joining and speeding 
 
 Serves ui/index.html on http://127.0.0.1:8766 (this PC only, not reachable from the network)
 and opens it in the default browser. The page loads nothing from the internet.
-The queue, the settings and the edits are kept in work/_ui/, so they survive a restart.
+The queue, the settings and the edits are kept in work/_ui/ in the data folder (paths.py), so they survive a restart.
 """
 import base64
 import collections
+import ctypes
 import datetime
 import hashlib
 import json
@@ -15,6 +16,7 @@ import mimetypes
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -29,6 +31,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'tools'))
 import offline_guard  # noqa: E402,F401
+from paths import DATA, WINDOWS  # noqa: E402
 import upscale  # noqa: E402
 import merge  # noqa: E402
 import shrink  # noqa: E402
@@ -37,11 +40,11 @@ import editor  # noqa: E402
 HOST = '127.0.0.1'
 PORT = 8766
 UI_FILE = ROOT / 'ui' / 'index.html'
-INPUT_DIR = ROOT / 'input'
-PREVIEW_DIR = ROOT / 'work' / '_preview'
-OUTPUT_DIR = ROOT / 'output'
-REFS_DIR = ROOT / 'refs'
-UI_DIR = ROOT / 'work' / '_ui'
+INPUT_DIR = DATA / 'input'
+PREVIEW_DIR = DATA / 'work' / '_preview'
+OUTPUT_DIR = DATA / 'output'
+REFS_DIR = DATA / 'refs'
+UI_DIR = DATA / 'work' / '_ui'
 QUEUE_FILE = UI_DIR / 'queue.json'
 JOB_LOG = UI_DIR / 'job.log'
 DEFAULT_SETTINGS =\
@@ -52,10 +55,10 @@ DEFAULT_SETTINGS =\
 	# "All videos" crop: every video that is not made yet gets shared_crop ({ crop, width, height } of the video it was set on)
 	'crop_all': False, 'shared_crop': None
 }
-MASTERS_DIR = ROOT / 'work' / '_masters'
-EDIT_WORK = ROOT / 'work' / '_edit'
+MASTERS_DIR = DATA / 'work' / '_masters'
+EDIT_WORK = DATA / 'work' / '_edit'
 # an edit saved as a file of its own (JSON), to open again later or on another PC; made in projects\ unless chosen otherwise
-PROJECTS_DIR = ROOT / 'projects'
+PROJECTS_DIR = DATA / 'projects'
 PROJECT_EXTENSION = '.vedit'
 PROJECT_FORMAT = 'video-upscaler edit'
 SHRINK_FILE = UI_DIR / 'shrinks.json'
@@ -119,9 +122,29 @@ def list_results() -> list:
 
 
 def ask_path(mode : str, folder : Path, name : str = '') -> str:
-	"""A Windows dialog to open or save a project file (mode 'project-open' or 'project-save'); '' when cancelled."""
+	"""A dialog to open or save a project file (mode 'project-open' or 'project-save'); '' when cancelled."""
 	result = subprocess.run([ sys.executable, '-c', PICKER_SCRIPT, mode, str(folder), name ], capture_output = True, text = True)
 	return result.stdout.strip()
+
+
+def reveal(path : Path) -> None:
+	"""Shows a folder, or a file in its folder, in Explorer (Windows) or the file manager (Linux)."""
+	if WINDOWS:
+		subprocess.Popen([ 'explorer', str(path) ] if path.is_dir() else [ 'explorer', '/select,', str(path) ])
+	else:
+		subprocess.Popen([ 'xdg-open', str(path if path.is_dir() else path.parent) ], stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+
+
+def kill_tree(process : subprocess.Popen) -> None:
+	"""Ends a process and every tool it started (SeedVR2, FaceFusion, ffmpeg)."""
+	if WINDOWS:
+		subprocess.run([ 'taskkill', '/PID', str(process.pid), '/T', '/F' ], capture_output = True)
+	else:
+		# started with start_new_session, so the process and its tools are one process group
+		try:
+			os.killpg(process.pid, signal.SIGKILL)
+		except ProcessLookupError:
+			pass
 
 
 def find_videos(folder : Path) -> list:
@@ -549,7 +572,7 @@ class Runner:
 
 	def kill_process(self) -> None:
 		if self.process and self.process.poll() is None:
-			subprocess.run([ 'taskkill', '/PID', str(self.process.pid), '/T', '/F' ], capture_output = True)
+			kill_tree(self.process)
 
 	def run(self) -> None:
 		paused = False
@@ -598,7 +621,7 @@ class Runner:
 		with self.lock:
 			# not when a pause or stop came in while this video was being set up
 			self.process = None if self.stop_requested or self.pause_requested else\
-				subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, cwd = ROOT, env = dict(os.environ, PYTHONUNBUFFERED = '1'))
+				subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, cwd = DATA, env = dict(os.environ, PYTHONUNBUFFERED = '1'), start_new_session = True)
 		code = None
 		if self.process:
 			with open(JOB_LOG, 'a' if resumed else 'w', encoding = 'utf-8') as log_file:
@@ -722,7 +745,7 @@ class Runner:
 			'items': items, 'settings': self.settings, 'running': running, 'paused': paused, 'batch': summary, 'job': state,
 			'people': people, 'models': list_models(), 'rife': upscale.RIFE_EXE.is_file(), 'results': list_results(),
 			'shrink_jobs': SHRINKER.snapshot() if SHRINKER else [], 'size_table': size_table(), 'edit': EDITOR.snapshot() if EDITOR else None,
-			'root': str(ROOT), 'output_dir': str(OUTPUT_DIR), 'input_dir': str(INPUT_DIR)
+			'root': str(ROOT), 'data_dir': str(DATA), 'refs_dir': str(REFS_DIR), 'output_dir': str(OUTPUT_DIR), 'input_dir': str(INPUT_DIR)
 		}
 
 
@@ -1020,7 +1043,7 @@ class Editor:
 		source = None
 		if text is None:
 			if not path:
-				path = ask_path('project-open', self.project_folder or (PROJECTS_DIR if PROJECTS_DIR.is_dir() else ROOT))
+				path = ask_path('project-open', self.project_folder or (PROJECTS_DIR if PROJECTS_DIR.is_dir() else DATA))
 				if not path:
 					return { 'cancelled': True }
 			source = Path(path)
@@ -1457,10 +1480,10 @@ class Handler(BaseHTTPRequestHandler):
 				self.send_json({ 'ok': True })
 			elif route == '/api/reveal':
 				path = Path(data['path'])
-				if path.resolve() in (OUTPUT_DIR.resolve(), INPUT_DIR.resolve()) and path.is_dir():
-					subprocess.Popen([ 'explorer', str(path.resolve()) ])
+				if path.resolve() in (OUTPUT_DIR.resolve(), INPUT_DIR.resolve(), REFS_DIR.resolve()) and path.is_dir():
+					reveal(path.resolve())
 				elif path.is_file() and (is_servable(path) or path.resolve().is_relative_to(INPUT_DIR.resolve()) or any(item['path'] == str(path) for item in RUNNER.items) or str(path.resolve()) in EDITOR.infos):
-					subprocess.Popen([ 'explorer', '/select,', str(path.resolve()) ])
+					reveal(path.resolve())
 				self.send_json({ 'ok': True })
 			else:
 				self.send_error(HTTPStatus.NOT_FOUND)
@@ -1497,6 +1520,21 @@ def main() -> None:
 		if '--no-browser' not in sys.argv:
 			webbrowser.open('http://{}:{}/'.format(HOST, PORT))
 		return
+	if not REFS_DIR.is_dir():
+		# an installed copy starts with an empty data folder: make the place for reference photos, with its explanation
+		REFS_DIR.mkdir(parents = True)
+		shutil.copy(ROOT / 'refs' / 'README.md', REFS_DIR)
+	if WINDOWS:
+		# held while Kinora runs, so its installer and uninstaller ask to close it first (AppMutex in packaging/windows/kinora.iss)
+		ctypes.windll.kernel32.CreateMutexW(None, False, 'KinoraApp')
+	else:
+		# closing the terminal (SIGHUP) or a plain kill (SIGTERM) stops like Ctrl+C does, so the video being made is
+		# paused, not left running: it is in a process group of its own (see kill_tree) that these signals do not reach
+		def stop(number, frame) -> None:
+			raise KeyboardInterrupt
+
+		signal.signal(signal.SIGHUP, stop)
+		signal.signal(signal.SIGTERM, stop)
 	EDITOR = Editor()
 	RUNNER = Runner()
 	SHRINKER = Shrinker()

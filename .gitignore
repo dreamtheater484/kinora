@@ -8,13 +8,17 @@
 /refs/*
 !/refs/README.md
 
-# installed by install.ps1 on the first start (pinned versions, see install.ps1)
+# installed by install.ps1 / install.sh on the first start (pinned versions, see install.ps1)
 /tools/seedvr2/
 /tools/facefusion/
 /tools/python/
 /tools/rife/
+/tools/uv/
 /tools/.installed
 /models/
+
+# installers built by packaging/ (see the release workflow)
+/dist/
 
 # local tooling
 /.claude/

@@ -12,7 +12,8 @@ import os
 import sys
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
-FACEFUSION_DIR = os.path.join(TOOLS_DIR, 'facefusion')
+# runs on FaceFusion's own Python, tools/facefusion/.venv in the data folder: the checkout is the folder around it
+FACEFUSION_DIR = os.path.dirname(sys.prefix)
 
 sys.stdout.reconfigure(encoding = 'utf-8', errors = 'replace')
 sys.path.insert(0, TOOLS_DIR)

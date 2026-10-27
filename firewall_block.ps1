@@ -1,5 +1,5 @@
 # Blocks all outbound network traffic for this project's own Python interpreters
-# (the ones SeedVR2 and FaceFusion run on). Your other Python installs are not affected.
+# (the ones SeedVR2 and FaceFusion run on, in Kinora's data folder). Your other Python installs are not affected.
 #
 # Run once, AFTER download_models.bat, in an Administrator PowerShell:
 #   powershell -ExecutionPolicy Bypass -File firewall_block.ps1
@@ -11,7 +11,8 @@
 # Remove completely:
 #   Remove-NetFirewallRule -DisplayName 'kinora*'
 
-$root = $PSScriptRoot
+# the data folder: the same rule as paths.py and install.ps1
+$root = if ($env:KINORA_DATA) { $env:KINORA_DATA } elseif (Test-Path (Join-Path $PSScriptRoot 'installed.txt')) { Join-Path $env:LOCALAPPDATA 'Kinora' } else { $PSScriptRoot }
 $folders = @(Get-ChildItem "$root\tools\python" -Directory | ForEach-Object { $_.FullName }) + @("$root\tools\seedvr2\.venv\Scripts", "$root\tools\facefusion\.venv\Scripts")
 
 $folders += "$root\tools\rife"
